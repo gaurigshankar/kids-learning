@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Place Value Blocks</title>
+<style>
+:root {
+  --bg: #fbf7ee;
+  --panel: #ffffff;
+  --ink: #26303b;
+  --muted: #6b7682;
+  --line: #e3dccb;
+  --accent: #1e5bd8;
+  --good: #1e8e3e;
+  --bad: #e53935;
+  --cu: 20px;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a20; --panel: #1f252d; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a20; --panel: #1f252d; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47;
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font-family: "Nunito", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+#app { display: flex; flex-direction: column; height: 100%; padding: 12px 16px 16px; gap: 12px; }
+header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+h1 { font-size: 24px; margin: 0 auto 0 0; font-weight: 900; }
+.seg { display: flex; background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 4px; }
+.seg button, .btn {
+  font: inherit; font-weight: 800; font-size: 17px; color: var(--ink); background: transparent;
+  border: 0; border-radius: 999px; padding: 8px 18px; min-height: 44px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.btn { background: var(--panel); border: 2px solid var(--line); }
+.btn:active { transform: scale(.96); }
+.stars { font-weight: 900; font-size: 19px; background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; min-height: 44px; display: flex; align-items: center; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#stage { flex: 1; display: flex; gap: 12px; min-height: 0; }
+#tray {
+  background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 10px;
+  display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: space-between; flex: none;
+}
+.tbtn { display: flex; flex-direction: column; align-items: center; gap: 6px; touch-action: none; cursor: grab; padding: 6px 10px; border-radius: 14px; }
+.tbtn:active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.tlabel { font-weight: 800; font-size: 15px; color: var(--muted); text-align: center; line-height: 1.1; }
+
+#matwrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+#banner { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; min-height: 80px; }
+#bannerMain { font-size: clamp(40px, 8vw, 72px); font-weight: 900; letter-spacing: 2px; line-height: 1; }
+#bannerSub { font-size: 24px; font-weight: 800; color: var(--muted); }
+#speak { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line); background: var(--panel); font-size: 26px; cursor: pointer; }
+#mat { flex: 1; display: flex; gap: 12px; min-height: 0; }
+.col {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; border: 4px solid var(--ck); border-radius: 22px;
+  background: color-mix(in srgb, var(--ck) 10%, var(--panel)); overflow: hidden; transition: transform .15s, box-shadow .15s;
+}
+.colhead { background: var(--ck); color: var(--ckt); font-weight: 900; font-size: 22px; text-align: center; padding: 8px; }
+.area { flex: 1; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; align-items: flex-end; overflow: hidden; min-height: calc(var(--cu) * 10 + 12px); }
+.foot { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 10px; }
+.digit { font-size: calc(var(--cu) * 3.4); font-weight: 900; line-height: 1; color: var(--ink); }
+.minus { width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font-size: 30px; font-weight: 900; cursor: pointer; line-height: 1; }
+.minus:active { transform: scale(.92); }
+#mat.dragging .col { opacity: .55; }
+#mat.dragging .col.want { opacity: 1; box-shadow: 0 0 0 6px color-mix(in srgb, var(--ck) 45%, transparent); }
+#mat.dragging .col.over { transform: scale(1.02); }
+
+.blk { flex: none; border-radius: 4px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.2), 0 1px 3px rgba(0,0,0,.25); border: 1.5px solid rgba(0,0,0,.28); }
+.cube { width: var(--cu); height: var(--cu); background: #f2b705; }
+.rod {
+  width: var(--cu); height: calc(var(--cu) * 10); background-color: #27ae60;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--cu) - 2px), rgba(0,0,0,.3) calc(var(--cu) - 2px), rgba(0,0,0,.3) var(--cu));
+}
+.flat {
+  width: calc(var(--cu) * 4); height: calc(var(--cu) * 4); background-color: #2f80ed;
+  background-image:
+    linear-gradient(to right, rgba(0,0,0,.28) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(0,0,0,.28) 1.5px, transparent 1.5px);
+  background-size: calc(var(--cu) * 0.4) calc(var(--cu) * 0.4);
+}
+.flying { position: fixed; pointer-events: none; transform: scale(1.12); box-shadow: 0 16px 24px rgba(0,0,0,.35); z-index: 100; }
+.glow { animation: glow .45s ease-in-out 2; }
+@keyframes glow { 50% { transform: scale(1.25); filter: brightness(1.4); } }
+#dragLayer { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
+
+#msg { min-height: 36px; font-size: 24px; font-weight: 900; text-align: center; }
+#msg.good { color: var(--good); } #msg.bad { color: var(--bad); } #msg.info { color: var(--accent); }
+#choices { display: none; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.choice {
+  min-width: 120px; height: 76px; border-radius: 20px; font: inherit; font-weight: 900; font-size: 38px; cursor: pointer;
+  background: var(--panel); color: var(--ink); border: 3px solid var(--line); box-shadow: inset 0 -5px 0 rgba(0,0,0,.08);
+}
+.choice:active { transform: scale(.95); }
+.choice.right { background: var(--good); color: #fff; border-color: var(--good); }
+.shake { animation: shake .35s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) { .shake, .glow { animation: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Place Value Blocks</h1>
+    <div class="seg" id="modes" role="group" aria-label="Activity">
+      <button data-mode="explore" aria-pressed="true">Explore</button>
+      <button data-mode="build" aria-pressed="false">Build it</button>
+      <button data-mode="read" aria-pressed="false">Read it</button>
+    </div>
+    <div class="seg" id="levels" role="group" aria-label="Biggest number">
+      <button data-level="99" aria-pressed="true">Up to 99</button>
+      <button data-level="999" aria-pressed="false">Up to 999</button>
+    </div>
+    <button class="btn" id="clear">Clear</button>
+    <div class="stars" id="stars">⭐ 0 right · ✖ 0 missed</div>
+  </header>
+
+  <section id="stage">
+    <div id="tray" aria-label="Blocks to drag"></div>
+    <div id="matwrap">
+      <div id="banner">
+        <div id="bannerMain"></div>
+        <div id="bannerSub"></div>
+        <button id="speak" aria-label="Say the number">🔊</button>
+      </div>
+      <div id="mat"></div>
+      <div id="msg" aria-live="polite"></div>
+      <div id="choices"></div>
+    </div>
+  </section>
+</div>
+<div id="dragLayer"></div>
+
+<script>
+(function () {
+  var COL = {
+    h: { name: "Hundreds", one: "hundred", val: 100, color: "#2f80ed", text: "#fff", cls: "flat" },
+    t: { name: "Tens", one: "ten", val: 10, color: "#27ae60", text: "#fff", cls: "rod" },
+    o: { name: "Ones", one: "one", val: 1, color: "#f2b705", text: "#26303b", cls: "cube" }
+  };
+  var mode = "explore", level = 99, c = { h: 0, t: 0, o: 0 };
+  var target = 0, locked = false, right = 0, missed = 0, qMissed = false, lastTarget = 0;
+
+  var mat = document.getElementById("mat");
+  var tray = document.getElementById("tray");
+  var msgEl = document.getElementById("msg");
+  var choicesEl = document.getElementById("choices");
+  var bannerMain = document.getElementById("bannerMain");
+  var bannerSub = document.getElementById("bannerSub");
+  var speakBtn = document.getElementById("speak");
+  var dragLayer = document.getElementById("dragLayer");
+  var starsEl = document.getElementById("stars");
+
+  function keys() { return level === 999 ? ["h", "t", "o"] : ["t", "o"]; }
+  function total() { return c.h * 100 + c.t * 10 + c.o; }
+  function maxTotal() { return level; }
+  function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = rand(0, i); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  function say(n) {
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(String(n));
+        u.rate = 0.85;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+  function msg(text, kind) { msgEl.textContent = text || ""; msgEl.className = kind || ""; }
+
+  function setScale() {
+    var s = Math.max(0.55, Math.min(1, window.innerWidth / 1000, window.innerHeight / 780));
+    document.documentElement.style.setProperty("--cu", (20 * s) + "px");
+  }
+
+  function makeBlock(k) {
+    var d = document.createElement("div");
+    d.className = "blk " + COL[k].cls;
+    return d;
+  }
+
+  /* ---------- tray ---------- */
+  function buildTray() {
+    tray.innerHTML = "";
+    tray.style.display = mode === "read" ? "none" : "flex";
+    keys().slice().reverse().forEach(function (k) {
+      var b = document.createElement("div");
+      b.className = "tbtn";
+      b.dataset.k = k;
+      b.appendChild(makeBlock(k));
+      var l = document.createElement("div");
+      l.className = "tlabel";
+      l.textContent = "1 " + COL[k].one;
+      b.appendChild(l);
+      b.addEventListener("pointerdown", trayDown);
+      tray.appendChild(b);
+    });
+  }
+
+  /* ---------- mat ---------- */
+  function renderMat() {
+    mat.innerHTML = "";
+    keys().forEach(function (k) {
+      var col = document.createElement("div");
+      col.className = "col";
+      col.dataset.k = k;
+      col.style.setProperty("--ck", COL[k].color);
+      col.style.setProperty("--ckt", COL[k].text);
+      var head = document.createElement("div");
+      head.className = "colhead";
+      head.textContent = COL[k].name;
+      var area = document.createElement("div");
+      area.className = "area";
+      for (var i = 0; i < c[k]; i++) area.appendChild(makeBlock(k));
+      var foot = document.createElement("div");
+      foot.className = "foot";
+      var dg = document.createElement("div");
+      dg.className = "digit";
+      dg.textContent = mode === "read" ? "?" : c[k];
+      foot.appendChild(dg);
+      if (mode !== "read") {
+        var mb = document.createElement("button");
+        mb.className = "minus";
+        mb.textContent = "−";
+        mb.setAttribute("aria-label", "Take one " + COL[k].one + " away");
+        mb.addEventListener("click", function () { removeOne(k); });
+        foot.appendChild(mb);
+      }
+      col.appendChild(head); col.appendChild(area); col.appendChild(foot);
+      mat.appendChild(col);
+    });
+  }
+
+  function renderBanner() {
+    speakBtn.style.display = "";
+    if (mode === "explore") {
+      bannerMain.textContent = total();
+      var parts = [];
+      if (c.h) parts.push(c.h * 100);
+      if (c.t) parts.push(c.t * 10);
+      if (c.o) parts.push(c.o);
+      bannerSub.textContent = parts.length > 1 ? parts.join(" + ") : (parts.length ? "" : "Add some blocks!");
+    } else if (mode === "build") {
+      bannerMain.textContent = "Build " + target;
+      bannerSub.textContent = "";
+    } else {
+      bannerMain.textContent = "What number is this?";
+      bannerSub.textContent = "";
+      speakBtn.style.display = "none";
+    }
+  }
+
+  function refresh() { renderMat(); renderBanner(); }
+
+  /* ---------- adding, trading, removing ---------- */
+  function add(k) {
+    if (locked || mode === "read") return;
+    if (total() + COL[k].val > maxTotal()) {
+      msg(level === 99 ? "99 is the biggest here. Try “Up to 999”!" : "999 is the biggest number here!", "info");
+      return;
+    }
+    msg("");
+    c[k]++;
+    refresh();
+    settle();
+  }
+
+  function removeOne(k) {
+    if (locked || mode === "read") return;
+    if (c[k] > 0) { c[k]--; msg(""); refresh(); }
+  }
+
+  function settle() {
+    var from = null, to = null;
+    if (c.o >= 10) { from = "o"; to = "t"; }
+    else if (c.t >= 10 && level === 999) { from = "t"; to = "h"; }
+    if (!from) { locked = false; afterChange(); return; }
+    locked = true;
+    msg("10 " + COL[from].name.toLowerCase() + " make 1 " + COL[to].one + "! Trade time!", "info");
+    var blocks = mat.querySelectorAll('.col[data-k="' + from + '"] .blk');
+    for (var i = 0; i < blocks.length; i++) blocks[i].classList.add("glow");
+    setTimeout(function () {
+      c[from] -= 10; c[to]++;
+      refresh();
+      var nb = mat.querySelectorAll('.col[data-k="' + to + '"] .blk');
+      if (nb.length) nb[nb.length - 1].classList.add("glow");
+      setTimeout(settle, 500);
+    }, 950);
+  }
+
+  function afterChange() {
+    renderBanner();
+    if (mode === "build" && total() > target) markMiss();
+    if (mode === "build" && total() === target) {
+      locked = true;
+      if (!qMissed) right++;
+      updateStars();
+      msg(["Great job!", "You built it!", "Brilliant!", "Yes!"][rand(0, 3)] + " " + target, "good");
+      say(target);
+      setTimeout(newBuild, 2200);
+    }
+  }
+
+  function updateStars() { starsEl.textContent = "⭐ " + right + " right · ✖ " + missed + " missed"; }
+
+  // count a question as missed once, no matter how many mistakes are made on it
+  function markMiss() {
+    if (!qMissed) { qMissed = true; missed++; updateStars(); }
+  }
+
+  /* ---------- dragging ---------- */
+  var drag = null;
+  function trayDown(e) {
+    e.preventDefault();
+    if (locked) return;
+    var k = e.currentTarget.dataset.k;
+    var el = makeBlock(k);
+    el.classList.add("flying");
+    dragLayer.appendChild(el);
+    drag = { k: k, el: el, dx: el.offsetWidth / 2, dy: el.offsetHeight / 2, sx: e.clientX, sy: e.clientY, moved: false };
+    place(e);
+    mat.classList.add("dragging");
+    var want = mat.querySelector('.col[data-k="' + k + '"]');
+    if (want) want.classList.add("want");
+  }
+  function place(e) {
+    drag.el.style.left = (e.clientX - drag.dx) + "px";
+    drag.el.style.top = (e.clientY - drag.dy) + "px";
+  }
+  function colAt(x, y) {
+    var el = document.elementFromPoint(x, y);
+    return el && el.closest ? el.closest(".col") : null;
+  }
+  window.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    e.preventDefault();
+    place(e);
+    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 6) drag.moved = true;
+    var col = colAt(e.clientX, e.clientY);
+    var all = mat.querySelectorAll(".col");
+    for (var i = 0; i < all.length; i++) all[i].classList.toggle("over", all[i] === col && col.dataset.k === drag.k);
+  }, { passive: false });
+
+  function endDrag(e) {
+    if (!drag) return;
+    var d = drag; drag = null;
+    d.el.remove();
+    mat.classList.remove("dragging");
+    var all = mat.querySelectorAll(".col");
+    for (var i = 0; i < all.length; i++) { all[i].classList.remove("want"); all[i].classList.remove("over"); }
+    if (e.type === "pointercancel") return;
+    var col = colAt(e.clientX, e.clientY);
+    var wrap = document.getElementById("matwrap").getBoundingClientRect();
+    var inWrap = e.clientX > wrap.left && e.clientX < wrap.right && e.clientY > wrap.top && e.clientY < wrap.bottom;
+    if (col && col.dataset.k !== d.k) {
+      msg("A " + COL[d.k].one + " goes in the " + COL[d.k].name.toLowerCase() + " column.", "bad");
+      if (mode === "build") markMiss();
+      col.classList.remove("shake"); void col.offsetWidth; col.classList.add("shake");
+    } else if (col || inWrap || !d.moved) {
+      add(d.k);
+    }
+  }
+  window.addEventListener("pointerup", endDrag);
+  window.addEventListener("pointercancel", endDrag);
+
+  /* ---------- challenges ---------- */
+  function pickTarget() {
+    var lo = level === 99 ? 11 : 101, hi = level, n, tries = 0;
+    do { n = rand(lo, hi); tries++; } while ((n === lastTarget || n % 10 === 0 && Math.random() < 0.7) && tries < 20);
+    lastTarget = n;
+    return n;
+  }
+
+  function newBuild() {
+    qMissed = false;
+    target = pickTarget();
+    c = { h: 0, t: 0, o: 0 };
+    locked = false;
+    msg("");
+    refresh();
+    say(target);
+  }
+
+  function digitsOf(n) { return { h: Math.floor(n / 100), t: Math.floor(n / 10) % 10, o: n % 10 }; }
+
+  function newRead() {
+    qMissed = false;
+    target = pickTarget();
+    c = digitsOf(target);
+    locked = false;
+    msg("");
+    refresh();
+    makeChoices(target);
+  }
+
+  function makeChoices(n) {
+    var lo = level === 99 ? 10 : 100, hi = level;
+    var d = digitsOf(n), cand = [];
+    if (level === 99) {
+      cand = [d.o * 10 + d.t, n + 10, n - 10, n + 1, n - 1];
+    } else {
+      cand = [d.h * 100 + d.o * 10 + d.t, d.t * 100 + d.h * 10 + d.o, d.o * 100 + d.t * 10 + d.h,
+              n + 100, n - 100, n + 10, n - 10, d.h * 100 + d.o, d.h * 10 + d.t * 1];
+    }
+    var opts = [n];
+    shuffle(cand).forEach(function (x) {
+      if (opts.length < 4 && x >= lo && x <= hi && opts.indexOf(x) < 0) opts.push(x);
+    });
+    while (opts.length < 4) { var r = rand(lo, hi); if (opts.indexOf(r) < 0) opts.push(r); }
+    shuffle(opts);
+    choicesEl.innerHTML = "";
+    opts.forEach(function (x) {
+      var b = document.createElement("button");
+      b.className = "choice";
+      b.textContent = x;
+      b.addEventListener("click", function () { pick(x, b); });
+      choicesEl.appendChild(b);
+    });
+  }
+
+  function pick(x, btn) {
+    if (locked) return;
+    if (x === target) {
+      locked = true;
+      btn.classList.add("right");
+      if (!qMissed) right++;
+      updateStars();
+      var parts = [];
+      if (c.h) parts.push(c.h * 100);
+      if (c.t) parts.push(c.t * 10);
+      if (c.o) parts.push(c.o);
+      msg(["Great job!", "You got it!", "Brilliant!", "Yes!"][rand(0, 3)] + " " + parts.join(" + ") + " = " + target, "good");
+      renderMat();
+      say(target);
+      setTimeout(newRead, 2800);
+    } else {
+      markMiss();
+      btn.classList.remove("shake"); void btn.offsetWidth; btn.classList.add("shake");
+      msg(level === 99 ? "Not quite. Count the tens, then the ones." : "Not quite. Count the hundreds, then the tens, then the ones.", "bad");
+    }
+  }
+
+  /* ---------- controls ---------- */
+  function press(group, attr, value) {
+    var bs = group.querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].setAttribute("aria-pressed", bs[i].dataset[attr] === String(value));
+  }
+
+  function start() {
+    c = { h: 0, t: 0, o: 0 };
+    locked = false;
+    msg("");
+    buildTray();
+    choicesEl.style.display = mode === "read" ? "flex" : "none";
+    starsEl.style.display = mode === "explore" ? "none" : "flex";
+    if (mode === "explore") refresh();
+    else if (mode === "build") newBuild();
+    else newRead();
+  }
+
+  document.getElementById("modes").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    mode = b.dataset.mode; press(this, "mode", mode); right = 0; missed = 0; updateStars(); start();
+  });
+  document.getElementById("levels").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    level = +b.dataset.level; press(this, "level", level); right = 0; missed = 0; updateStars(); start();
+  });
+  document.getElementById("clear").addEventListener("click", function () {
+    if (mode === "read") return;
+    if (locked) return;
+    c = { h: 0, t: 0, o: 0 }; msg(""); refresh();
+  });
+  speakBtn.addEventListener("click", function () { say(mode === "explore" ? total() : target); });
+
+  document.addEventListener("gesturestart", function (e) { e.preventDefault(); });
+  document.addEventListener("dblclick", function (e) { e.preventDefault(); });
+  window.addEventListener("resize", function () { if (!drag) { setScale(); } });
+
+  setScale();
+  start();
+})();
+</script>
+</body>
+</html>

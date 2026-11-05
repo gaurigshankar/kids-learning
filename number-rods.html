@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Number Rods</title>
+<style>
+:root {
+  --bg: #fbf7ee;
+  --panel: #ffffff;
+  --board: #fffdf8;
+  --ink: #26303b;
+  --muted: #6b7682;
+  --line: #e3dccb;
+  --accent: #1e5bd8;
+  --good: #1e8e3e;
+  --bad: #e53935;
+  --u: 56px;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47;
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font-family: "Nunito", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+#app { display: flex; flex-direction: column; height: 100%; padding: 12px 16px 16px; gap: 12px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+h1 { font-size: 26px; margin: 0; font-weight: 900; letter-spacing: .2px; margin-right: auto; }
+.tabs { display: flex; background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 4px; }
+.tab, .btn {
+  font: inherit; font-weight: 800; font-size: 18px; color: var(--ink); background: transparent;
+  border: 0; border-radius: 999px; padding: 10px 22px; min-height: 48px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: #fff; }
+.btn { background: var(--panel); border: 2px solid var(--line); }
+.btn:active { transform: scale(.96); }
+.stars { font-weight: 900; font-size: 20px; background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 8px 16px; min-height: 48px; display: flex; align-items: center; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* PLAY */
+#play { flex: 1; display: flex; gap: 12px; min-height: 0; }
+#tray {
+  background: var(--panel); border: 2px solid var(--line); border-radius: 20px;
+  padding: 12px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; justify-content: center;
+  flex: none;
+}
+.trayrod { touch-action: none; cursor: grab; }
+#boardwrap { flex: 1; position: relative; min-width: 0; }
+#board {
+  position: absolute; inset: 0; background: var(--board); border: 2px solid var(--line); border-radius: 20px; overflow: hidden;
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
+  background-size: var(--u) 100%; background-position: 10px 0; opacity: 1;
+}
+#hint { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 22px; font-weight: 700; pointer-events: none; padding: 24px; }
+#trash {
+  position: absolute; right: 14px; bottom: 14px; width: 76px; height: 76px; border-radius: 20px;
+  background: var(--panel); border: 3px dashed var(--line); display: grid; place-items: center; font-size: 34px; z-index: 5;
+}
+#trash.hot { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 18%, var(--panel)); transform: scale(1.1); }
+.rod {
+  position: absolute; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 22px; touch-action: none; cursor: grab;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.18);
+  border: 2px solid rgba(0,0,0,.25);
+}
+.rod.drag { z-index: 20; box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 14px 22px rgba(0,0,0,.35); cursor: grabbing; transform: scale(1.06); }
+#dragLayer { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
+#board.target { border-color: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 28%, transparent); }
+.ghost { position: absolute; height: 44px; border-radius: 10px; border: 3px dashed var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; display: none; z-index: 1; }
+.total {
+  position: absolute; height: 20px; font-weight: 900; font-size: 15px; color: var(--accent);
+  display: flex; align-items: center; padding-left: 4px; white-space: nowrap; pointer-events: none;
+}
+
+/* QUIZ */
+#quiz { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 0; overflow: auto; }
+#q { font-size: clamp(44px, 9vw, 84px); font-weight: 900; letter-spacing: 2px; }
+#viz { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.slot { border: 3px dashed var(--muted); color: var(--muted); background: transparent; box-shadow: none; }
+.row { display: flex; }
+#msg { min-height: 40px; font-size: 28px; font-weight: 900; }
+#msg.good { color: var(--good); } #msg.bad { color: var(--bad); }
+#answers { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-width: 720px; }
+.ans {
+  width: 84px; height: 84px; border-radius: 22px; font: inherit; font-weight: 900; font-size: 38px; cursor: pointer;
+  border: 3px solid rgba(0,0,0,.25); box-shadow: inset 0 -6px 0 rgba(0,0,0,.18);
+}
+.ans:active { transform: scale(.94); }
+.shake { animation: shake .35s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.pop { animation: pop .4s; }
+@keyframes pop { 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .shake, .pop { animation: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Number Rods</h1>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabPlay" aria-selected="true">Build</button>
+      <button class="tab" role="tab" id="tabQuiz" aria-selected="false">Quiz</button>
+    </div>
+    <button class="btn" id="clear">Clear</button>
+    <div class="stars" id="stars" hidden>⭐ 0 right · ✖ 0 missed</div>
+  </header>
+
+  <section id="play">
+    <div id="tray" aria-label="Rods to drag"></div>
+    <div id="boardwrap">
+      <div id="board">
+        <div id="hint">Drag a rod onto the board.<br>Put rods end to end to add them up.</div>
+      </div>
+      <div id="trash" aria-label="Drag here to remove">🗑️</div>
+    </div>
+  </section>
+
+  <section id="quiz">
+    <div id="q"></div>
+    <div id="viz"></div>
+    <div id="msg" aria-live="polite"></div>
+    <div id="answers"></div>
+  </section>
+</div>
+
+<div id="dragLayer"></div>
+
+<script>
+(function () {
+  var COLORS = {1:'#f4f1e8',2:'#e53935',3:'#7ed957',4:'#c75bd6',5:'#f6c915',6:'#1e8e3e',7:'#2b2b2b',8:'#8d4a2b',9:'#1e5bd8',10:'#f57c1f'};
+  var DARKTEXT = {1:1,3:1,5:1};
+  var ROW_H = 68, ROD_H = 44, PAD = 10;
+  var u = 56;
+  var rods = [];
+  var nextId = 1;
+  var drag = null;
+
+  var board = document.getElementById('board');
+  var tray = document.getElementById('tray');
+  var trash = document.getElementById('trash');
+  var hint = document.getElementById('hint');
+  var dragLayer = document.getElementById('dragLayer');
+  var ghost = null;
+
+  function styleRod(el, n) {
+    el.style.background = COLORS[n];
+    el.style.color = DARKTEXT[n] ? '#26303b' : '#fff';
+  }
+
+  function setUnit() {
+    u = Math.max(30, Math.min(60, (window.innerWidth - 40) / 16));
+    document.documentElement.style.setProperty('--u', u + 'px');
+    buildTray();
+    rods.forEach(layoutRod);
+    renderTotals();
+    renderQuiz();
+  }
+
+  /* ---------- Tray ---------- */
+  function buildTray() {
+    tray.innerHTML = '';
+    var pu = u * 0.5;
+    var h = Math.max(22, Math.min(36, (window.innerHeight - 200) / 10 - 6));
+    for (var n = 1; n <= 10; n++) {
+      var el = document.createElement('div');
+      el.className = 'rod trayrod';
+      el.style.position = 'relative';
+      el.style.width = (n * pu) + 'px';
+      el.style.height = h + 'px';
+      el.style.fontSize = Math.round(h * 0.55) + 'px';
+      el.textContent = n;
+      el.dataset.n = n;
+      styleRod(el, n);
+      el.addEventListener('pointerdown', trayDown);
+      tray.appendChild(el);
+    }
+  }
+
+  function trayDown(e) {
+    e.preventDefault();
+    var n = +e.currentTarget.dataset.n;
+    var rect = board.getBoundingClientRect();
+    var r = makeRod(n, 0, 0);
+    r.el.classList.add('drag');
+    startDrag(r, e, n * u / 2, ROD_H / 2, true);
+    moveDrag(e);
+  }
+
+  /* ---------- Rods ---------- */
+  function makeRod(n, col, row) {
+    var el = document.createElement('div');
+    el.className = 'rod';
+    el.textContent = n;
+    styleRod(el, n);
+    var r = { id: nextId++, n: n, col: col, row: row, el: el };
+    el.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      var b = el.getBoundingClientRect();
+      startDrag(r, e, e.clientX - b.left, e.clientY - b.top, false);
+    });
+    board.appendChild(el);
+    rods.push(r);
+    layoutRod(r);
+    updateHint();
+    return r;
+  }
+
+  function layoutRod(r) {
+    r.el.style.width = (r.n * u) + 'px';
+    r.el.style.left = (PAD + r.col * u) + 'px';
+    r.el.style.top = (PAD + r.row * ROW_H) + 'px';
+  }
+
+  function maxRow() {
+    return Math.max(0, Math.floor((board.clientHeight - PAD - ROW_H) / ROW_H));
+  }
+  function maxCol(n) { return Math.max(0, Math.floor((board.clientWidth - 2 * PAD) / u) - n); }
+
+  function overlaps(r, col, row) {
+    return rods.some(function (o) {
+      return o !== r && o.row === row && col < o.col + o.n && o.col < col + r.n;
+    });
+  }
+
+  function updateHint() { hint.style.display = rods.length ? 'none' : 'grid'; }
+
+  /* ---------- Dragging ---------- */
+  function startDrag(r, e, dx, dy, fromTray) {
+    drag = { r: r, dx: dx, dy: dy, sx: e.clientX, sy: e.clientY, fromTray: fromTray, moved: false };
+    // lift the rod out of the board so it is visible everywhere on screen while dragging
+    dragLayer.appendChild(r.el);
+    r.el.style.position = 'fixed';
+    r.el.style.left = (e.clientX - dx) + 'px';
+    r.el.style.top = (e.clientY - dy) + 'px';
+    r.el.classList.add('drag');
+    board.classList.add('target');
+    ghost = document.createElement('div');
+    ghost.className = 'ghost';
+    ghost.style.width = (r.n * u) + 'px';
+    board.appendChild(ghost);
+    renderTotals(r);
+  }
+
+  function moveDrag(e) {
+    if (!drag) return;
+    var rect = board.getBoundingClientRect();
+    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 6) drag.moved = true;
+    drag.r.el.style.left = (e.clientX - drag.dx) + 'px';
+    drag.r.el.style.top = (e.clientY - drag.dy) + 'px';
+    var t = trash.getBoundingClientRect();
+    var hot = e.clientX > t.left && e.clientX < t.right && e.clientY > t.top && e.clientY < t.bottom;
+    trash.classList.toggle('hot', hot);
+    drag.hot = hot;
+    drag.overBoard = e.clientX > rect.left;
+    if (ghost) {
+      if (drag.overBoard && !hot) {
+        var s = snapFor(drag.r);
+        ghost.style.display = 'block';
+        ghost.style.left = (PAD + s.col * u) + 'px';
+        ghost.style.top = (PAD + s.row * ROW_H) + 'px';
+      } else {
+        ghost.style.display = 'none';
+      }
+    }
+  }
+
+  // where the rod will land if dropped now
+  function snapFor(r) {
+    var rect = board.getBoundingClientRect();
+    var left = parseFloat(r.el.style.left) - rect.left - board.clientLeft;
+    var top = parseFloat(r.el.style.top) - rect.top - board.clientTop;
+    var col = Math.round((left - PAD) / u);
+    var row = Math.round((top - PAD) / ROW_H);
+    col = Math.max(0, Math.min(maxCol(r.n), col));
+    row = Math.max(0, Math.min(maxRow(), row));
+    var tries = 0;
+    while (overlaps(r, col, row) && tries < 30) {
+      row = row < maxRow() ? row + 1 : 0;
+      tries++;
+    }
+    return { col: col, row: row };
+  }
+
+  window.addEventListener('pointermove', function (e) { if (drag) { e.preventDefault(); moveDrag(e); } }, { passive: false });
+
+  function endDrag(e) {
+    if (!drag) return;
+    var r = drag.r;
+    var s0 = snapFor(r);
+    r.el.classList.remove('drag');
+    r.el.style.zIndex = '';
+    r.el.style.position = '';
+    board.appendChild(r.el);
+    board.classList.remove('target');
+    if (ghost) { ghost.remove(); ghost = null; }
+    trash.classList.remove('hot');
+    if (drag.hot || !drag.overBoard) {
+      removeRod(r);
+    } else if (drag.fromTray && !drag.moved) {
+      // tap: drop into the first free spot
+      var row = 0;
+      while (overlaps(r, 0, row) && row < maxRow()) row++;
+      r.col = 0; r.row = row;
+      layoutRod(r);
+    } else {
+      r.col = s0.col; r.row = s0.row;
+      layoutRod(r);
+    }
+    drag = null;
+    renderTotals();
+    updateHint();
+  }
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+
+  function removeRod(r) {
+    r.el.remove();
+    rods = rods.filter(function (o) { return o !== r; });
+  }
+
+  /* ---------- Totals (sum of rods placed end to end) ---------- */
+  function renderTotals(skip) {
+    board.querySelectorAll('.total').forEach(function (t) { t.remove(); });
+    var rows = {};
+    rods.forEach(function (r) {
+      if (r === skip) return;
+      (rows[r.row] = rows[r.row] || []).push(r);
+    });
+    Object.keys(rows).forEach(function (k) {
+      var list = rows[k].sort(function (a, b) { return a.col - b.col; });
+      var chain = [list[0]];
+      function flush() {
+        if (chain.length > 1) {
+          var sum = chain.reduce(function (s, r) { return s + r.n; }, 0);
+          var t = document.createElement('div');
+          t.className = 'total';
+          t.textContent = chain.map(function (r) { return r.n; }).join(' + ') + ' = ' + sum;
+          t.style.left = (PAD + chain[0].col * u) + 'px';
+          t.style.top = (PAD + (+k) * ROW_H + ROD_H + 3) + 'px';
+          board.appendChild(t);
+        }
+      }
+      for (var i = 1; i < list.length; i++) {
+        var prev = chain[chain.length - 1];
+        if (prev.col + prev.n === list[i].col) chain.push(list[i]);
+        else { flush(); chain = [list[i]]; }
+      }
+      flush();
+    });
+  }
+
+  document.getElementById('clear').addEventListener('click', function () {
+    rods.slice().forEach(removeRod);
+    renderTotals();
+    updateHint();
+    if (mode === 'quiz') { right = 0; missed = 0; updateStars(); newQuestion(); }
+  });
+
+  /* ---------- Quiz ---------- */
+  var mode = 'play';
+  var right = 0, missed = 0, qMissed = false;
+  var q = null, locked = false;
+  var quizEl = document.getElementById('quiz'), playEl = document.getElementById('play');
+  var qEl = document.getElementById('q'), vizEl = document.getElementById('viz');
+  var msgEl = document.getElementById('msg'), ansEl = document.getElementById('answers');
+  var starsEl = document.getElementById('stars');
+
+  function updateStars() { starsEl.textContent = '⭐ ' + right + ' right · ✖ ' + missed + ' missed'; }
+
+  // count a question as missed once, no matter how many wrong taps it gets
+  function markMiss() {
+    if (!qMissed) { qMissed = true; missed++; updateStars(); }
+  }
+
+  function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+
+  function newQuestion() {
+    var a = rand(1, 9), b = rand(1, 10 - a);
+    var type = Math.random() < 0.5 ? 'sum' : 'miss';
+    q = { a: a, b: b, c: a + b, type: type, answer: type === 'sum' ? a + b : b };
+    qMissed = false;
+    locked = false;
+    msgEl.textContent = '';
+    msgEl.className = '';
+    renderQuiz();
+  }
+
+  function qRod(n, label, slot) {
+    var d = document.createElement('div');
+    d.className = 'rod' + (slot ? ' slot' : '');
+    d.style.position = 'relative';
+    d.style.width = (n * u) + 'px';
+    d.style.height = '56px';
+    d.style.fontSize = '28px';
+    if (!slot) styleRod(d, n);
+    d.textContent = label;
+    return d;
+  }
+
+  function renderQuiz() {
+    if (!q) return;
+    qEl.textContent = q.type === 'sum' ? (q.a + ' + ' + q.b + ' = ?') : (q.a + ' + ? = ' + q.c);
+    vizEl.innerHTML = '';
+    // total bar on top
+    var total = qRod(q.c, q.type === 'sum' ? '?' : q.c, q.type === 'sum');
+    total.id = 'totalRod';
+    vizEl.appendChild(total);
+    // parts underneath
+    var row = document.createElement('div');
+    row.className = 'row';
+    row.appendChild(qRod(q.a, q.a, false));
+    var b = qRod(q.b, q.type === 'miss' ? '?' : q.b, q.type === 'miss');
+    b.id = 'missRod';
+    row.appendChild(b);
+    vizEl.appendChild(row);
+    ansEl.innerHTML = '';
+    for (var n = 1; n <= 10; n++) {
+      if (q.type === 'sum' && n < 2) continue;
+      (function (n) {
+        var btn = document.createElement('button');
+        btn.className = 'ans';
+        btn.textContent = n;
+        btn.style.background = COLORS[n];
+        btn.style.color = DARKTEXT[n] ? '#26303b' : '#fff';
+        btn.addEventListener('click', function () { answer(n, btn); });
+        ansEl.appendChild(btn);
+      })(n);
+    }
+  }
+
+  function answer(n, btn) {
+    if (locked) return;
+    if (n === q.answer) {
+      locked = true;
+      if (!qMissed) right++;
+      updateStars();
+      var target = q.type === 'sum' ? document.getElementById('totalRod') : document.getElementById('missRod');
+      target.classList.remove('slot');
+      target.textContent = n;
+      styleRod(target, n);
+      target.classList.add('pop');
+      msgEl.className = 'good';
+      msgEl.textContent = ['Great job!', 'You got it!', 'Brilliant!', 'Yes!'][rand(0, 3)] + ' ' + q.a + ' + ' + q.b + ' = ' + q.c;
+      setTimeout(newQuestion, 1800);
+    } else {
+      markMiss();
+      btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
+      msgEl.className = 'bad';
+      msgEl.textContent = 'Not quite. Try again!';
+    }
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('tabPlay').setAttribute('aria-selected', m === 'play');
+    document.getElementById('tabQuiz').setAttribute('aria-selected', m === 'quiz');
+    playEl.style.display = m === 'play' ? 'flex' : 'none';
+    quizEl.style.display = m === 'quiz' ? 'flex' : 'none';
+    starsEl.hidden = m !== 'quiz';
+    if (m === 'quiz') { if (!q) newQuestion(); else renderQuiz(); }
+    else { setUnit(); }
+  }
+  document.getElementById('tabPlay').addEventListener('click', function () { setMode('play'); });
+  document.getElementById('tabQuiz').addEventListener('click', function () { setMode('quiz'); });
+
+  // block pinch / double-tap zoom on iPad
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); });
+
+  window.addEventListener('resize', function () { if (!drag) setUnit(); });
+  setUnit();
+})();
+</script>
+</body>
+</html>

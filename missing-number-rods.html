@@ -97,6 +97,24 @@ h1 span { color: var(--accent); }
 .shake { animation: shake .35s; }
 @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 @media (prefers-reduced-motion: reduce) { .shake { animation: none; } }
+
+/* Phones / narrow portrait: stack everything so the board gets the full width */
+@media (max-width: 760px) {
+  body { overflow-y: auto; }
+  #app { height: auto; min-height: 100%; padding: 8px 10px 16px; }
+  h1 { font-size: 21px; width: 100%; }
+  .btn { font-size: 15px; padding: 6px 14px; min-height: 40px; }
+  #main { flex-direction: column; flex: none; }
+  #stage { flex: none; }
+  #eq { font-size: clamp(30px, 9vw, 48px); gap: 10px; white-space: nowrap; }
+  #slot { width: 1.4em; height: 1.4em; }
+  #boardwrap { flex: none; height: 290px; }
+  #note { font-size: 18px; padding: 8px 14px; }
+  #tray { order: 3; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; padding: 8px; gap: 6px; }
+  #tray .rod { width: 44px !important; height: 38px !important; font-size: 20px !important; }
+  #picker { order: 2; }
+  .pick { width: 46px; height: 46px; font-size: 22px; border-radius: 12px; }
+}
 </style>
 </head>
 <body>
@@ -215,7 +233,7 @@ h1 span { color: var(--accent); }
     e.preventDefault();
     var n = +e.currentTarget.dataset.n, pt = boardPoint(e);
     var r = makeRod(n, 0, 0, false);
-    startDrag(e, r, n * u / 2, ROD_H / 2);
+    startDrag(e, r, n * u / 2, ROD_H / 2); drag.fromTray = true;
     moveTo(r, e);
   }
   function rodDown(e, r) {
@@ -238,11 +256,20 @@ h1 span { color: var(--accent); }
     var t = trash.getBoundingClientRect();
     trash.classList.toggle('hot', e.clientX > t.left && e.clientX < t.right && e.clientY > t.top && e.clientY < t.bottom);
   }
+  function autoPlace(r) {
+    var maxY = Math.floor((board.clientHeight - ROD_H - PAD) / ROW), y = 2;
+    function busy(y) { return rods.some(function (o) { return o !== r && o.y === y && 0 < o.x + o.n && r.n > o.x; }); }
+    while (y < maxY && busy(y)) y++;
+    r.x = 0; r.y = y; place(r);
+  }
   function onMove(e) { if (drag) moveTo(drag.r, e); }
   function onUp(e) {
     document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp);
     if (!drag) return;
     var r = drag.r; r.el.classList.remove('drag');
+    var b = board.getBoundingClientRect();
+    var inside = e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
+    if (!inside && !trash.classList.contains('hot') && drag.fromTray) autoPlace(r);
     if (trash.classList.contains('hot')) { r.el.remove(); rods.splice(rods.indexOf(r), 1); }
     trash.classList.remove('hot'); drag = null;
   }

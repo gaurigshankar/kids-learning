@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Missing Number Rods</title>
+<style>
+:root {
+  --bg: #fbf7ee; --panel: #ffffff; --board: #fffdf8; --ink: #26303b; --muted: #6b7682; --line: #e3dccb;
+  --accent: #1e5bd8; --good: #1e8e3e; --bad: #e53935; --note: #f6b93b;
+  --u: 40px;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] { --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47; color-scheme: dark; }
+html { height: 100%; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font-family: "Nunito", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+#app { display: flex; flex-direction: column; height: 100%; padding: 12px 16px 16px; gap: 10px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+h1 { font-size: 26px; margin: 0 auto 0 0; font-weight: 900; }
+h1 span { color: var(--accent); }
+.btn {
+  font: inherit; font-weight: 800; font-size: 18px; color: var(--ink); background: var(--panel);
+  border: 2px solid var(--line); border-radius: 999px; padding: 10px 20px; min-height: 48px; cursor: pointer;
+}
+.btn:active { transform: scale(.96); }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#main { flex: 1; display: flex; gap: 12px; min-height: 0; }
+#tray {
+  background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 12px;
+  display: flex; flex-direction: column; gap: 5px; align-items: flex-start; justify-content: center; flex: none;
+}
+#stage { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+#eq { display: flex; align-items: center; justify-content: center; gap: 14px; font-weight: 900; font-size: clamp(34px, 6.5vw, 64px); }
+#slot {
+  width: 1.5em; height: 1.5em; border: 3px solid var(--muted); border-radius: 14px; background: var(--panel);
+  font: inherit; color: var(--ink); display: grid; place-items: center; padding: 0;
+}
+#slot.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--panel)); }
+#slot.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--panel)); }
+#msg { min-height: 30px; text-align: center; font-size: 20px; font-weight: 800; color: var(--muted); }
+#msg.good { color: var(--good); } #msg.bad { color: var(--bad); }
+
+#boardwrap { flex: 1; position: relative; min-height: 0; }
+#board {
+  position: absolute; inset: 0; background: var(--board); border: 2px solid var(--line); border-radius: 20px; overflow: hidden;
+}
+#board.grid {
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: var(--u) var(--u); background-position: 16px 16px;
+}
+.rod {
+  position: absolute; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-weight: 900; touch-action: none; cursor: grab;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.18); border: 2px solid rgba(0,0,0,.25);
+}
+.rod.fixed { cursor: default; }
+.rod.drag { z-index: 20; cursor: grabbing; box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 14px 22px rgba(0,0,0,.35); transform: scale(1.04); }
+.rod .units { position: absolute; inset: 0; display: none; pointer-events: none;
+  background-image: linear-gradient(to right, rgba(0,0,0,.35) 1px, transparent 1px); background-size: var(--u) 100%; }
+#board.units .rod .units { display: block; }
+#note {
+  position: absolute; background: var(--note); color: #26303b; border: 3px solid #26303b; border-radius: 14px;
+  padding: 12px 22px; font-weight: 900; font-size: clamp(20px, 3.6vw, 32px); text-align: center; line-height: 1.15;
+  box-shadow: 3px 5px 8px rgba(0,0,0,.25); z-index: 6;
+}
+#note::before { content: ""; position: absolute; top: -22px; left: 48px; border: 12px solid transparent; border-bottom: 22px solid #26303b; border-top: 0; }
+#note::after { content: ""; position: absolute; top: -15px; left: 52px; border: 8px solid transparent; border-bottom: 16px solid var(--note); border-top: 0; }
+#note[hidden] { display: none; }
+#trash {
+  position: absolute; right: 12px; bottom: 12px; width: 64px; height: 64px; border-radius: 18px; background: var(--panel);
+  border: 3px dashed var(--line); display: grid; place-items: center; font-size: 28px; z-index: 5;
+}
+#trash.hot { border-color: var(--bad); transform: scale(1.1); }
+
+#picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.pick {
+  width: 56px; height: 56px; border-radius: 16px; font: inherit; font-weight: 900; font-size: 26px; cursor: pointer;
+  background: var(--panel); color: var(--ink); border: 3px solid var(--line);
+}
+.pick:active { transform: scale(.93); }
+.shake { animation: shake .35s; }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) { .shake { animation: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Missing Number <span>Rods</span></h1>
+    <button class="btn" id="bGrid" aria-pressed="true">Grid</button>
+    <button class="btn" id="bUnits" aria-pressed="false">Unit lines</button>
+    <button class="btn" id="bNote" aria-pressed="true">Prompt</button>
+    <button class="btn" id="bReset">Reset</button>
+    <button class="btn primary" id="bNext">Next ▶</button>
+  </header>
+
+  <div id="main">
+    <div id="tray" aria-label="Rods to add"></div>
+    <div id="stage">
+      <div id="eq"></div>
+      <div id="msg" aria-live="polite"></div>
+      <div id="boardwrap">
+        <div id="board" class="grid">
+          <div id="note">What might the<br>students notice?</div>
+        </div>
+        <div id="trash" aria-label="Drag here to remove">🗑️</div>
+      </div>
+      <div id="picker" aria-label="Choose the missing number"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var COLORS = {1:'#f4f1e8',2:'#e53935',3:'#7ed957',4:'#c75bd6',5:'#f6c915',6:'#1e8e3e',7:'#2b2b2b',8:'#8d4a2b',9:'#1e5bd8',10:'#f57c1f',11:'#d6204f'};
+  var DARKTEXT = {1:1,3:1,5:1};
+  var PROBLEMS = [[5,4,3],[6,3,4],[7,2,5],[8,3,6],[4,6,5],[9,2,7],[3,8,6]]; /* a + b = ? + c */
+  var P = 0, u = 40, ROD_H = 34, PAD = 16, ROW = 48;
+  var rods = [], drag = null, picked = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var board = $('board'), tray = $('tray'), trash = $('trash'), note = $('note'), msg = $('msg');
+
+  function styleRod(el, n) { el.style.background = COLORS[n]; el.style.color = DARKTEXT[n] ? '#26303b' : '#fff'; }
+  function answer() { var p = PROBLEMS[P]; return p[0] + p[1] - p[2]; }
+
+  function setUnit() {
+    u = Math.max(26, Math.min(46, (board.parentNode.clientWidth - 2 * PAD) / 13));
+    ROD_H = Math.round(u * 0.85); ROW = Math.round(u * 1.2);
+    document.documentElement.style.setProperty('--u', u + 'px');
+    buildTray(); rods.forEach(place); placeNote();
+  }
+
+  function buildTray() {
+    tray.innerHTML = '';
+    var pu = Math.min(u * 0.5, 22), h = Math.max(20, Math.min(34, (window.innerHeight - 220) / 11 - 5));
+    for (var n = 1; n <= 11; n++) {
+      var el = document.createElement('div');
+      el.className = 'rod'; el.style.position = 'relative';
+      el.style.width = (n * pu + 4) + 'px'; el.style.height = h + 'px'; el.style.fontSize = Math.round(h * .55) + 'px';
+      el.textContent = n; el.dataset.n = n; styleRod(el, n);
+      el.addEventListener('pointerdown', trayDown);
+      tray.appendChild(el);
+    }
+  }
+
+  function makeRod(n, x, y, fixed) {
+    var el = document.createElement('div');
+    el.className = 'rod' + (fixed ? ' fixed' : '');
+    el.textContent = n; styleRod(el, n);
+    var un = document.createElement('div'); un.className = 'units'; el.appendChild(un);
+    var r = { n: n, x: x, y: y, el: el, fixed: !!fixed };
+    el.style.fontSize = Math.round(ROD_H * .6) + 'px';
+    if (!fixed) el.addEventListener('pointerdown', function (e) { rodDown(e, r); });
+    board.appendChild(el); rods.push(r); place(r);
+    return r;
+  }
+
+  function place(r) {
+    r.el.style.width = r.n * u + 'px'; r.el.style.height = ROD_H + 'px';
+    r.el.style.fontSize = Math.round(ROD_H * .6) + 'px';
+    r.el.style.left = (PAD + r.x * u) + 'px'; r.el.style.top = (PAD + r.y * ROW) + 'px';
+  }
+
+  function placeNote() {
+    note.style.left = (PAD + 1 * u) + 'px'; note.style.top = (PAD + 4 * ROW + 14) + 'px';
+  }
+
+  function load() {
+    rods.forEach(function (r) { r.el.remove(); }); rods = [];
+    var p = PROBLEMS[P];
+    makeRod(p[0], 0, 0, true); makeRod(p[1], p[0], 0, true); makeRod(p[2], p[0] + p[1] - p[2], 1, true);
+    $('eq').innerHTML = p[0] + ' + ' + p[1] + ' = <button id="slot" aria-label="Missing number"></button> + ' + p[2];
+    picked = null; setMsg('', ''); buildPicker(); placeNote();
+  }
+
+  function setMsg(t, c) { msg.textContent = t; msg.className = c || ''; var s = $('slot'); if (s) s.className = c || ''; }
+
+  function buildPicker() {
+    var pk = $('picker'); pk.innerHTML = '';
+    for (var n = 1; n <= 12; n++) {
+      var b = document.createElement('button'); b.className = 'pick'; b.textContent = n;
+      b.addEventListener('click', (function (n) { return function () { choose(n); }; })(n));
+      pk.appendChild(b);
+    }
+  }
+
+  function choose(n) {
+    var s = $('slot'); s.textContent = n;
+    var p = PROBLEMS[P];
+    if (n === answer()) setMsg('Yes! ' + p[0] + ' + ' + p[1] + ' = ' + n + ' + ' + p[2] + '. Both sides make ' + (p[0] + p[1]) + '.', 'good');
+    else { setMsg('Not quite. Try building the missing rod and compare the lengths.', 'bad'); s.classList.add('shake'); setTimeout(function () { s.classList.remove('shake'); }, 400); }
+  }
+
+  /* ---------- dragging ---------- */
+  function boardPoint(e) { var b = board.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+
+  function trayDown(e) {
+    e.preventDefault();
+    var n = +e.currentTarget.dataset.n, pt = boardPoint(e);
+    var r = makeRod(n, 0, 0, false);
+    startDrag(e, r, n * u / 2, ROD_H / 2);
+    moveTo(r, e);
+  }
+  function rodDown(e, r) {
+    e.preventDefault();
+    var pt = boardPoint(e);
+    startDrag(e, r, pt.x - (PAD + r.x * u), pt.y - (PAD + r.y * ROW));
+  }
+  function startDrag(e, r, dx, dy) {
+    drag = { r: r, dx: dx, dy: dy };
+    r.el.classList.add('drag');
+    document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp);
+  }
+  function moveTo(r, e) {
+    var pt = boardPoint(e);
+    r.x = Math.round((pt.x - drag.dx - PAD) / u); r.y = Math.round((pt.y - drag.dy - PAD) / ROW);
+    var cols = Math.floor((board.clientWidth - 2 * PAD) / u);
+    r.x = Math.max(0, Math.min(cols - r.n, r.x));
+    r.y = Math.max(0, Math.min(Math.floor((board.clientHeight - ROD_H - PAD) / ROW), r.y));
+    place(r);
+    var t = trash.getBoundingClientRect();
+    trash.classList.toggle('hot', e.clientX > t.left && e.clientX < t.right && e.clientY > t.top && e.clientY < t.bottom);
+  }
+  function onMove(e) { if (drag) moveTo(drag.r, e); }
+  function onUp(e) {
+    document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp);
+    if (!drag) return;
+    var r = drag.r; r.el.classList.remove('drag');
+    if (trash.classList.contains('hot')) { r.el.remove(); rods.splice(rods.indexOf(r), 1); }
+    trash.classList.remove('hot'); drag = null;
+  }
+
+  /* ---------- controls ---------- */
+  function toggle(id, fn) { var b = $(id); b.addEventListener('click', function () { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); fn(on); }); }
+  toggle('bGrid', function (on) { board.classList.toggle('grid', on); });
+  toggle('bUnits', function (on) { board.classList.toggle('units', on); });
+  toggle('bNote', function (on) { note.hidden = !on; });
+  $('bReset').addEventListener('click', load);
+  $('bNext').addEventListener('click', function () { P = (P + 1) % PROBLEMS.length; load(); });
+  window.addEventListener('resize', setUnit);
+
+  setUnit(); load();
+})();
+</script>
+</body>
+</html>

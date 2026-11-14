@@ -54,8 +54,11 @@ h1 span { color: var(--accent); }
 }
 #slot.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--panel)); }
 #slot.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--panel)); }
-#msg { min-height: 30px; text-align: center; font-size: 20px; font-weight: 800; color: var(--muted); }
-#msg.good { color: var(--good); } #msg.bad { color: var(--bad); }
+#msg { min-height: 56px; text-align: center; font-size: 20px; font-weight: 800; color: var(--muted); line-height: 1.25; }
+#msg small { display: block; font-size: 16px; font-weight: 700; opacity: .9; }
+#msg.good { color: var(--good); }
+#msg.bad { color: #fff; background: var(--bad); border-radius: 16px; padding: 8px 14px; font-size: 24px; animation: shake .35s; }
+.rod.wrong { outline: 4px solid var(--bad); outline-offset: 2px; z-index: 8; }
 
 #boardwrap { flex: 1; position: relative; min-height: 0; }
 #board {
@@ -99,6 +102,11 @@ h1 span { color: var(--accent); }
 @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 @media (prefers-reduced-motion: reduce) { .shake { animation: none; } }
 
+.topnav { display: flex; gap: 8px; flex: none; flex-wrap: wrap; }
+.topnav a { flex: none; font-weight: 800; font-size: 15px; color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 6px 16px; min-height: 40px; display: flex; align-items: center; text-decoration: none; }
+.topnav a:active { transform: scale(.96); }
+.topnav a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* Phones / narrow portrait: stack everything so the board gets the full width */
 @media (max-width: 760px) {
   body { overflow-y: auto; }
@@ -107,6 +115,7 @@ h1 span { color: var(--accent); }
   .btn { font-size: 15px; padding: 6px 14px; min-height: 40px; }
   #main { flex-direction: column; flex: none; }
   #stage { flex: none; }
+  #msg.bad { font-size: 20px; }
   #eq { font-size: clamp(30px, 9vw, 48px); gap: 10px; white-space: nowrap; }
   #slot { width: 1.4em; height: 1.4em; }
   #boardwrap { flex: none; height: 290px; }
@@ -120,6 +129,12 @@ h1 span { color: var(--accent); }
 </head>
 <body>
 <div id="app">
+  <nav class="topnav" aria-label="Exercises">
+    <a href="index.html">🏠 Home</a>
+    <a href="number-rods.html">Number Rods</a>
+    <a href="place-value-blocks.html">Place Value</a>
+    <a href="missing-number-rods.html" aria-current="page">Missing Number</a>
+  </nav>
   <header>
     <h1>Missing Number <span>Rods</span></h1>
     <button class="btn" id="bGrid" aria-pressed="true">Grid</button>
@@ -210,7 +225,7 @@ h1 span { color: var(--accent); }
     answerRod = null; solved = false; qMissed = false; setMsg('', ''); buildPicker(); placeNote();
   }
 
-  function setMsg(t, c) { msg.textContent = t; msg.className = c || ''; var s = $('slot'); if (s) s.className = c || ''; }
+  function setMsg(t, c) { msg.innerHTML = t; msg.className = c || ''; var s = $('slot'); if (s) s.className = c || ''; }
 
   function buildPicker() {
     var pk = $('picker'); pk.innerHTML = '';
@@ -230,14 +245,22 @@ h1 span { color: var(--accent); }
     if (solved) return;
     if (answerRod) { answerRod.el.remove(); rods.splice(rods.indexOf(answerRod), 1); }
     answerRod = makeRod(n, 0, 1, false);
+    judge(n);
+  }
+
+  /* An answer is checked however it is made: tap a number, tap a rod, or drop a rod on the board. */
+  function judge(n) {
     var s = $('slot'); s.textContent = n;
-    var p = PROBLEMS[P];
+    var p = PROBLEMS[P], total = p[0] + p[1], mine = n + p[2];
+    rods.forEach(function (r) { r.el.classList.remove('wrong'); });
     if (n === answer()) {
       solved = true; if (!qMissed) right++; updateStars();
-      setMsg('Yes! ' + p[0] + ' + ' + p[1] + ' = ' + n + ' + ' + p[2] + '. Both sides make ' + (p[0] + p[1]) + '.', 'good');
+      setMsg('\uD83C\uDF89 Yes! ' + p[0] + ' + ' + p[1] + ' = ' + n + ' + ' + p[2] + '. Both sides make ' + total + '.', 'good');
     } else {
       if (!qMissed) { qMissed = true; missed++; updateStars(); }
-      setMsg('Not quite. Look at the rods: is the bottom row as long as the top row?', 'bad');
+      var how = mine > total ? 'too long' : 'too short';
+      setMsg('\u274C Not quite \u2014 try again!<small>' + n + ' + ' + p[2] + ' = ' + mine + ', which is ' + how + '. We need ' + total + '.</small>', 'bad');
+      if (answerRod) answerRod.el.classList.add('wrong');
       s.classList.add('shake'); setTimeout(function () { s.classList.remove('shake'); }, 400);
     }
   }
@@ -288,8 +311,12 @@ h1 span { color: var(--accent); }
     }
     var b = board.getBoundingClientRect();
     var inside = e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
-    if (!inside && !trash.classList.contains('hot') && drag.fromTray) autoPlace(r);
-    if (trash.classList.contains('hot')) { r.el.remove(); rods.splice(rods.indexOf(r), 1); }
+    if (!inside && drag.fromTray) { r.el.remove(); rods.splice(rods.indexOf(r), 1); trash.classList.remove('hot'); drag = null; return; }
+    if (inside && !trash.classList.contains('hot') && drag.fromTray && !solved) {
+      if (answerRod && answerRod !== r) { answerRod.el.remove(); rods.splice(rods.indexOf(answerRod), 1); }
+      answerRod = r; trash.classList.remove('hot'); drag = null; judge(r.n); return;
+    }
+    if (trash.classList.contains('hot')) { r.el.remove(); rods.splice(rods.indexOf(r), 1); if (r === answerRod) { answerRod = null; if (!solved) { $('slot').textContent = ''; setMsg('', ''); } } }
     trash.classList.remove('hot'); drag = null;
   }
 

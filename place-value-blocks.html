@@ -111,10 +111,20 @@ h1 { font-size: 24px; margin: 0 auto 0 0; font-weight: 900; }
 .shake { animation: shake .35s; }
 @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 @media (prefers-reduced-motion: reduce) { .shake, .glow { animation: none; } }
+.topnav { display: flex; gap: 8px; flex: none; flex-wrap: wrap; }
+.topnav a { flex: none; font-weight: 800; font-size: 15px; color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 6px 16px; min-height: 40px; display: flex; align-items: center; text-decoration: none; }
+.topnav a:active { transform: scale(.96); }
+.topnav a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 </style>
 </head>
 <body>
 <div id="app">
+  <nav class="topnav" aria-label="Exercises">
+    <a href="index.html">🏠 Home</a>
+    <a href="number-rods.html">Number Rods</a>
+    <a href="place-value-blocks.html" aria-current="page">Place Value</a>
+    <a href="missing-number-rods.html">Missing Number</a>
+  </nav>
   <header>
     <h1>Place Value Blocks</h1>
     <div class="seg" id="modes" role="group" aria-label="Activity">

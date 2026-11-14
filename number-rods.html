@@ -107,10 +107,20 @@ h1 { font-size: 26px; margin: 0; font-weight: 900; letter-spacing: .2px; margin-
 .pop { animation: pop .4s; }
 @keyframes pop { 50% { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .shake, .pop { animation: none; } }
+.topnav { display: flex; gap: 8px; flex: none; flex-wrap: wrap; }
+.topnav a { flex: none; font-weight: 800; font-size: 15px; color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 6px 16px; min-height: 40px; display: flex; align-items: center; text-decoration: none; }
+.topnav a:active { transform: scale(.96); }
+.topnav a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 </style>
 </head>
 <body>
 <div id="app">
+  <nav class="topnav" aria-label="Exercises">
+    <a href="index.html">🏠 Home</a>
+    <a href="number-rods.html" aria-current="page">Number Rods</a>
+    <a href="place-value-blocks.html">Place Value</a>
+    <a href="missing-number-rods.html">Missing Number</a>
+  </nav>
   <header>
     <h1>Number Rods</h1>
     <div class="tabs" role="tablist">

@@ -3,364 +3,541 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Equal Groups</title>
+<title>Share the Cookies</title>
 <style>
 :root {
-  --bg: #fbf7ee; --panel: #ffffff; --board: #fffdf8; --ink: #26303b; --muted: #6b7682; --line: #e3dccb;
-  --accent: #1e5bd8; --good: #1e8e3e; --bad: #e53935; --cube: #a23db5; --cube-dark: #6f2480; --hint: #f6b93b;
-  --c: 30px;
-  color-scheme: light;
+  --bg: #fbf7ee; --panel: #ffffff; --ink: #26303b; --muted: #8a8272; --line: #e3dccb;
+  --accent: #1e5bd8; --good: #1e8e3e; --gold: #f6b93b; --sky: #4aa8e8;
+  --btn: 56px; --pc: 52px; --safe-b: env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] { --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47; color-scheme: dark; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
 body {
-  margin: 0; background: var(--bg); color: var(--ink);
+  position: fixed; inset: 0; overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
+  background: var(--bg); color: var(--ink);
   font-family: "Nunito", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
-  overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
-#app { display: flex; flex-direction: column; min-height: 100vh; padding: 12px 16px 24px; gap: 10px; max-width: 1100px; margin: 0 auto; }
-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-h1 { font-size: 26px; margin: 0 auto 0 0; font-weight: 900; }
-h1 span { color: var(--cube); }
-.btn {
-  font: inherit; font-weight: 800; font-size: 18px; color: var(--ink); background: var(--panel);
-  border: 2px solid var(--line); border-radius: 999px; padding: 10px 20px; min-height: 48px; cursor: pointer;
+#app {
+  height: 100dvh; display: grid; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px calc(var(--safe-b) + 10px);
+  grid-template-rows: auto 1fr auto; grid-template-columns: 1fr; grid-template-areas: "top" "friends" "pile";
+  max-width: 1200px; margin: 0 auto;
 }
-.btn:active { transform: scale(.96); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.hint { background: var(--hint); border-color: var(--hint); color: #26303b; }
-.btn.pulse { animation: pulse 1s infinite; }
-.stars { font-weight: 900; font-size: 18px; background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 8px 16px; min-height: 48px; display: flex; align-items: center; }
-:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-
-.topnav { display: flex; gap: 8px; flex-wrap: wrap; }
-.topnav a { font-weight: 800; font-size: 15px; color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 6px 16px; min-height: 40px; display: flex; align-items: center; text-decoration: none; }
-.topnav a:active { transform: scale(.96); }
-.topnav a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-#eq { display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 900; font-size: clamp(28px, 6vw, 54px); white-space: nowrap; }
-#eq .step { width: 1.3em; height: 1.3em; border-radius: 50%; border: 3px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; line-height: 1; cursor: pointer; padding: 0; }
-#eq .step:active { transform: scale(.92); }
-#eq .box { min-width: 1.5em; height: 1.5em; border: 3px solid var(--muted); border-radius: 14px; background: var(--panel); display: grid; place-items: center; padding: 0 .15em; }
-#eq .box.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--panel)); }
-#total { text-align: center; font-weight: 800; font-size: 20px; color: var(--muted); margin-top: -4px; }
-
-#msg { min-height: 58px; text-align: center; font-size: 20px; font-weight: 800; color: var(--muted); line-height: 1.25; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-#msg small { display: block; font-size: 16px; font-weight: 700; }
-#msg.good { color: var(--good); }
-#msg.bad { color: #fff; background: var(--bad); border-radius: 16px; padding: 8px 14px; animation: shake .35s; }
-
-/* Cubes */
-.cube {
-  position: relative; width: var(--c); height: var(--c); border-radius: 6px; flex: none;
-  background: linear-gradient(145deg, #b857cb, var(--cube)); border: 2px solid var(--cube-dark);
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 2px 3px rgba(0,0,0,.2);
-  touch-action: none; cursor: grab;
+@media (orientation: landscape) and (min-aspect-ratio: 23/20) {
+  #app { grid-template-rows: auto 1fr; grid-template-columns: auto 1fr; grid-template-areas: "top top" "pile friends"; }
 }
-.cube::after { content: ""; position: absolute; right: -6px; top: 25%; width: 6px; height: 50%; background: var(--cube-dark); border-radius: 0 3px 3px 0; }
-.cube.lifted { opacity: .25; }
-.cube.float { position: fixed; z-index: 100; pointer-events: none; transform: scale(1.12) rotate(-4deg); box-shadow: 0 14px 22px rgba(0,0,0,.35); }
-.cube.extra { outline: 4px solid var(--bad); outline-offset: 1px; }
-.cube.extra::before { content: "\2716"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: calc(var(--c) * .6); text-shadow: 0 0 4px #000; }
-.ghost {
-  width: var(--c); height: var(--c); border-radius: 6px; flex: none; border: 3px dashed color-mix(in srgb, var(--cube) 60%, transparent);
-  background: color-mix(in srgb, var(--cube) 10%, transparent); display: grid; place-items: center; font-weight: 900; color: var(--cube); font-size: calc(var(--c) * .6);
+
+/* top bar */
+#top { grid-area: top; display: flex; align-items: center; gap: 8px; min-height: 64px; }
+.ibtn {
+  position: relative; overflow: hidden; width: var(--btn); height: var(--btn); border-radius: 50%; flex: none;
+  border: 3px solid var(--line); background: var(--panel); font-size: calc(var(--btn) * .5); line-height: 1; padding: 0;
+  display: grid; place-items: center; cursor: pointer; color: var(--ink);
 }
-.ghost.next { border-color: var(--hint); background: color-mix(in srgb, var(--hint) 30%, transparent); color: #26303b; animation: pulse 1s infinite; }
+.ibtn:active { transform: scale(.92); }
+#home::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(30,91,216,.3); }
+#home.holding::after { height: 100%; transition: height .6s linear; }
+#dots { flex: 1; display: flex; justify-content: center; gap: 8px; font-size: 30px; }
+#dots span { filter: grayscale(1); opacity: .35; transition: all .3s; }
+#dots span.on { filter: none; opacity: 1; transform: scale(1.15); }
+#bobo { width: 72px; height: 72px; font-size: 48px; border-color: var(--gold); background: #fff3d1; animation: bounce 8s infinite; }
+#bobo.cheer { animation: jump .5s 2; }
+:focus-visible { outline: 4px solid var(--accent); outline-offset: 3px; }
 
-/* Pile */
-#pilewrap { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 4px 0; }
-#pile {
-  background: var(--panel); border: 3px solid var(--line); border-radius: 20px; padding: 10px 14px 12px; max-height: 32vh; overflow: auto;
-  transition: border-color .15s, background .15s;
+/* friends */
+#friends { grid-area: friends; min-height: 0; display: grid; gap: 10px; align-content: center; justify-content: center; }
+.friend {
+  position: relative; background: var(--panel); border: 4px solid var(--line); border-radius: 26px; padding: 6px 6px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: border-color .2s, background .2s, transform .15s;
 }
-#pile.hot, .mat.hot { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
-#pile.glow { border-color: var(--hint); animation: pulse 1s infinite; }
-#pile.left { border-color: var(--bad); animation: pulse 1s infinite; }
-.zonetitle { font-weight: 900; font-size: 15px; color: var(--muted); margin-bottom: 6px; }
-.cubes { display: flex; flex-wrap: wrap; gap: 6px 10px; min-height: var(--c); align-items: center; }
-#pile .empty { color: var(--muted); font-weight: 800; }
+.friend:active { transform: scale(.97); }
+.friend .face { line-height: 1; }
+.friend.hot { border-color: var(--sky); background: color-mix(in srgb, var(--sky) 14%, var(--panel)); transform: scale(1.05); }
+.friend.needy { border-color: var(--gold); animation: pulse 1s infinite; }
+.friend.wobble { animation: wobble .6s infinite; }
+.friend.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 13%, var(--panel)); }
+.friend.munch .face { animation: munch .25s; }
+.plate { display: grid; gap: 6px; justify-content: center; align-content: start; padding: 6px; border-radius: 50% / 30%; background: color-mix(in srgb, var(--line) 40%, transparent); }
+.slot { display: grid; place-items: center; }
+.slot.ghost { border: 3px dashed color-mix(in srgb, var(--gold) 80%, #888); border-radius: 12px; background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.badge { position: absolute; top: -10px; right: -10px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 900; font-size: 26px; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,.25); }
+.badge.pop { animation: pop .25s; }
+.point { position: absolute; top: -26px; left: 50%; margin-left: -18px; font-size: 38px; animation: point 0.9s infinite; pointer-events: none; z-index: 5; }
 
-/* Mats */
-#mats { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 6px 0; }
-.mat {
-  width: calc(5 * (var(--c) + 10) + 26px); min-height: calc(var(--c) + 66px); background: var(--board); border: 3px solid var(--line); border-radius: 20px; padding: 8px 12px 12px;
-  transition: border-color .15s, background .15s;
+/* cookies */
+.ck { display: grid; place-items: center; line-height: 1; touch-action: none; cursor: grab; position: relative; filter: drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+.ck.sel { animation: bob .6s infinite; filter: drop-shadow(0 0 8px var(--gold)) drop-shadow(0 0 3px var(--gold)); }
+.ck.lifted { opacity: .25; }
+.float { position: fixed; z-index: 100; pointer-events: none; line-height: 1; display: grid; place-items: center; filter: drop-shadow(0 10px 8px rgba(0,0,0,.35)); transform: scale(1.25) rotate(-6deg); }
+.flyer { position: fixed; z-index: 90; pointer-events: none; line-height: 1; display: grid; place-items: center; opacity: .75; }
+
+/* pile */
+#pilewrap { grid-area: pile; background: var(--panel); border: 3px solid var(--line); border-radius: 26px; padding: 10px; display: flex; align-items: center; justify-content: center; align-self: end; }
+@media (orientation: landscape) and (min-aspect-ratio: 23/20) { #pilewrap { align-self: stretch; } }
+#pilewrap.hot { border-color: var(--sky); background: color-mix(in srgb, var(--sky) 12%, var(--panel)); }
+#pile { display: grid; gap: 8px; }
+#pile .cell { display: grid; place-items: center; }
+
+/* picker */
+.pick {
+  background: var(--panel); border: 4px solid var(--line); border-radius: 26px; padding: 8px; cursor: pointer; font: inherit; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; position: relative;
 }
-.mat .cubes { gap: 8px 10px; }
-.mat .zonetitle { display: flex; justify-content: space-between; }
-.mat.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 12%, var(--board)); }
-.mat.next { border-color: var(--hint); animation: pulse 1s infinite; }
+.pick:active { transform: scale(.95); }
+.pick .crowd { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; line-height: 1; }
+.pick .num { font-weight: 900; font-size: 22px; color: var(--muted); }
+.pick.done { border-color: var(--good); background: color-mix(in srgb, var(--good) 12%, var(--panel)); }
+.pick.done::after { content: "\2B50"; position: absolute; top: -12px; right: -8px; font-size: 32px; }
+.pick.next { border-color: var(--gold); animation: pulse 1s infinite; }
+.pick.go { background: var(--good); border-color: var(--good); color: #fff; font-size: 64px; font-weight: 900; }
 
-/* Ways found */
-#ways { background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 10px 14px; }
-#waylist { display: flex; flex-wrap: wrap; gap: 8px; }
-.way { border: 3px dashed var(--line); border-radius: 14px; min-width: 64px; min-height: 52px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 22px; color: var(--muted); }
-.way.found { border: 3px solid var(--good); background: color-mix(in srgb, var(--good) 10%, var(--panel)); color: var(--ink); flex-direction: column; gap: 4px; font-size: 15px; }
-.mini { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 150px; }
-.mini i { display: flex; flex-wrap: wrap; gap: 1px; padding: 2px; border: 1.5px solid var(--good); border-radius: 4px; width: max-content; max-width: 34px; }
-.mini b { width: 6px; height: 6px; background: var(--cube); border-radius: 1.5px; display: block; }
+/* overlays */
+.overlay { position: fixed; inset: 0; z-index: 200; background: color-mix(in srgb, var(--bg) 94%, transparent); display: grid; place-items: center; align-content: center; gap: 18px; text-align: center; }
+.overlay[hidden] { display: none; }
+.bigplay { width: 168px; height: 168px; border-radius: 50%; border: 0; background: var(--good); color: #fff; font-size: 84px; box-shadow: 0 10px 0 #136b2c; cursor: pointer; display: grid; place-items: center; padding: 0 0 0 10px; animation: pulse 1.2s infinite; }
+.bigplay:active { transform: translateY(6px); box-shadow: 0 4px 0 #136b2c; }
+.overlay .mascot { font-size: 96px; line-height: 1; }
+.overlay .stars { font-size: 64px; letter-spacing: 6px; }
+.confetti { position: fixed; top: -40px; z-index: 150; pointer-events: none; font-size: 32px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-@keyframes pulse { 50% { transform: scale(1.03); opacity: .8; } }
-@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-@media (prefers-reduced-motion: reduce) { .pulse, .ghost.next, #pile.glow, #pile.left, .mat.next, #msg.bad { animation: none; } }
-
-@media (max-width: 760px) {
-  #app { padding: 8px 10px 20px; }
-  h1 { font-size: 21px; width: 100%; }
-  .btn { font-size: 15px; padding: 6px 14px; min-height: 40px; }
-  #eq { gap: 8px; }
-  .mat { padding: 6px 8px 10px; }
+@keyframes pulse { 50% { transform: scale(1.05); } }
+@keyframes bounce { 0%, 90%, 100% { transform: none; } 94% { transform: translateY(-8px); } 97% { transform: none; } }
+@keyframes jump { 50% { transform: translateY(-14px) scale(1.1); } }
+@keyframes wobble { 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+@keyframes pop { 50% { transform: scale(1.35); } }
+@keyframes munch { 50% { transform: scale(1.15); } }
+@keyframes point { 50% { transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) {
+  #bobo, #bobo.cheer, .friend.needy, .friend.wobble, .pick.next, .bigplay, .ck.sel, .point, .badge.pop, .friend.munch .face { animation: none; }
+  .friend.needy, .pick.next { box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 50%, transparent); }
 }
+@media (min-width: 700px) { :root { --btn: 64px; } }
 </style>
 </head>
 <body>
 <div id="app">
-  <nav class="topnav" aria-label="Exercises">
-    <a href="index.html">🏠 Home</a>
-    <a href="number-rods.html">Number Rods</a>
-    <a href="place-value-blocks.html">Place Value</a>
-    <a href="missing-number-rods.html">Missing Number</a>
-    <a href="equal-groups.html" aria-current="page">Equal Groups</a>
-  </nav>
-  <header>
-    <h1>Equal <span>Groups</span></h1>
-    <button class="btn hint" id="bHint">💡 Hint</button>
-    <button class="btn primary" id="bCheck">Check ✓</button>
-    <button class="btn" id="bReset">Reset</button>
-    <button class="btn" id="bNext">Next ▶</button>
-    <div class="stars" id="stars">⭐ 0 right · ✖ 0 missed</div>
-  </header>
-
-  <div id="total"></div>
-  <div id="eq">
-    <button class="step" id="gMinus" aria-label="Fewer groups">−</button>
-    <span class="box" id="gnum">3</span>
-    <button class="step" id="gPlus" aria-label="More groups">+</button>
-    <span>groups of</span>
-    <span class="box" id="tnum">?</span>
+  <div id="top">
+    <button class="ibtn" id="home" aria-label="Hold to go home">🏠</button>
+    <div id="dots" aria-hidden="true"><span>⭐</span><span>⭐</span><span>⭐</span></div>
+    <button class="ibtn" id="say" aria-label="Say it again">🔊</button>
+    <button class="ibtn" id="again" aria-label="Start this one again">🔄</button>
+    <button class="ibtn" id="bobo" aria-label="Help">🐻</button>
   </div>
-  <div id="msg" aria-live="polite"></div>
-
-  <div id="pilewrap"><div id="pile" data-zone="pile"></div></div>
-  <div id="mats"></div>
-
-  <div id="ways">
-    <div class="zonetitle" id="waytitle">Ways found</div>
-    <div id="waylist"></div>
-  </div>
+  <div id="friends"></div>
+  <div id="pilewrap" data-zone="pile"><div id="pile" role="group" aria-label="Cookie pile"></div></div>
 </div>
+
+<div class="overlay" id="cover">
+  <div class="mascot">🐻🍪</div>
+  <button class="bigplay" id="play" aria-label="Play">▶</button>
+</div>
+<div class="overlay" id="levelend" hidden>
+  <div class="mascot">🤗</div>
+  <div class="stars">⭐⭐⭐</div>
+  <button class="bigplay" id="levelnext" aria-label="Next">▶</button>
+</div>
+<div class="sr" id="live" aria-live="polite"></div>
 
 <script>
 (function () {
-  var NS = [24, 12, 18, 20, 16, 30];
-  var idx = 0, N = NS[0], G = 3, c = 30;
-  var pile = [], mats = [];
-  var found = {};          /* found[N][G] = true */
-  var mode = '', hintLevel = 0, busy = false;
-  var right = 0, missed = 0, drag = null;
-
   var $ = function (id) { return document.getElementById(id); };
-  var pileEl = $('pile'), matsEl = $('mats'), msgEl = $('msg');
+  var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var FACES = ['🐶', '🐱', '🐰', '🐸', '🦊', '🐼'];
+  var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+  var COLS = { 1: 1, 2: 2, 3: 3, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4, 9: 3, 10: 5, 11: 4, 12: 4 };
+  /* level: piles (3 per level), preset G (0 = child chooses), needAll = must find every way */
+  var LEVELS = {
+    1: { piles: [4, 6, 8], G: 2 },
+    2: { piles: [6, 9, 12], G: 3 },
+    3: { piles: [6, 8, 12], G: 0, needAll: false },
+    4: { piles: [12, 10, 8], G: 0, needAll: true }
+  };
+  var COPY = {
+    start: 'Let’s share the cookies!',
+    goal: 'Give every friend the same number of cookies.',
+    who: 'Who is coming to share?',
+    needy: 'Who needs a cookie?',
+    give: 'Give a cookie to this friend.',
+    watch: 'Watch me!',
+    uneven: 'Hmm, let’s make it fair!',
+    another: 'Can we share a different way?',
+    all: 'You found every way! Amazing!',
+    done: 'You did it!'
+  };
 
-  function ways() { var w = []; for (var g = 1; g <= 12; g++) if (N % g === 0) w.push(g); return w; }
-  function foundNow() { return found[N] || (found[N] = {}); }
-  function updateStars() { $('stars').textContent = '⭐ ' + right + ' right · ✖ ' + missed + ' missed'; }
-  function setMsg(t, cls) { msgEl.innerHTML = t; msgEl.className = cls || ''; }
+  var level = 1, piles = [], pileIdx = 0, done = [false, false, false], found = {};
+  var N = 4, G = 2, pile = [], plates = [];
+  var mode = 'cover';              /* cover | deal | celebrate | picker | levelend */
+  var hintLevel = 0, uneven = false, selected = null, autoTimer = null, idleTimers = [], lastDragEnd = 0, drag = null;
+  var pc = 52, home = $('home');
 
-  /* ---------- state ---------- */
-  function reset() {
+  try { var sv = JSON.parse(localStorage.getItem('eg_v2')); if (sv && LEVELS[sv.level]) level = sv.level; } catch (e) {}
+  function save() { try { localStorage.setItem('eg_v2', JSON.stringify({ level: level })); } catch (e) {} }
+
+  /* ---------- sound ---------- */
+  var Speaker = {
+    ok: 'speechSynthesis' in window, voice: null,
+    init: function () {
+      if (!this.ok) return; var self = this;
+      function pick() {
+        var vs = speechSynthesis.getVoices(); if (!vs.length) return;
+        var en = vs.filter(function (v) { return /^en/i.test(v.lang); });
+        var pref = en.filter(function (v) { return /Samantha|Ava|Karen|Allison|Susan|Zira/i.test(v.name); });
+        self.voice = pref[0] || en.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] || en[0] || null;
+      }
+      pick(); speechSynthesis.onvoiceschanged = pick;
+    },
+    say: function (t) {
+      $('live').textContent = t;
+      if (!this.ok) return;
+      try {
+        speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.15; if (this.voice) u.voice = this.voice;
+        speechSynthesis.speak(u);
+      } catch (e) {}
+    },
+    count: function (n) { this.say(WORDS[n] || String(n)); }
+  };
+  var actx = null;
+  function unlockAudio() {
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) { actx = null; }
+  }
+  function tone(f1, f2, dur, delay) {
+    if (!actx) return;
+    try {
+      var t = actx.currentTime + (delay || 0), o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  var Sfx = {
+    pop: function () { tone(520, 880, 0.08); },
+    boing: function () { tone(400, 200, 0.15); },
+    chime: function () { tone(523, 523, 0.18, 0); tone(659, 659, 0.18, 0.15); tone(784, 784, 0.3, 0.3); }
+  };
+
+  /* ---------- helpers ---------- */
+  function ways() { var w = []; for (var g = 2; g <= 6; g++) if (N % g === 0 && g !== N) w.push(g); return w; }
+  function foundFor() { return found[N] || (found[N] = {}); }
+  function counts() { return plates.map(function (p) { return p.length; }); }
+  function neediest() { var c = counts(), m = Math.min.apply(null, c); return c.indexOf(m); }
+  function isFair() { var c = counts(); return pile.length === 0 && c.every(function (x) { return x === c[0]; }); }
+  function setTimers() {
+    clearTimers();
+    if (mode !== 'deal') return;
+    idleTimers = [
+      setTimeout(function () { escalate(1); }, 6000),
+      setTimeout(function () { escalate(2); }, 12000),
+      setTimeout(function () { escalate(3); }, 20000)
+    ];
+  }
+  function clearTimers() { idleTimers.forEach(clearTimeout); idleTimers = []; }
+  function stopAuto() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
+
+  /* ---------- game flow ---------- */
+  function startLevel() {
+    piles = LEVELS[level].piles; pileIdx = 0; done = [false, false, false]; found = {};
+    $('levelend').hidden = true; startPile();
+  }
+  function startPile() {
+    N = piles[pileIdx]; clearTimers(); stopAuto();
+    if (LEVELS[level].G) { G = LEVELS[level].G; startRound(true); }
+    else { mode = 'picker'; pile = []; for (var i = 0; i < N; i++) pile.push(i); plates = []; selected = null; hintLevel = 0; Speaker.say(COPY.who); render(); }
+  }
+  function startRound(speak) {
     pile = []; for (var i = 0; i < N; i++) pile.push(i);
-    mats = []; for (var g = 0; g < G; g++) mats.push([]);
-    mode = ''; hintLevel = 0; setMsg('Drag cubes into the groups so every group has the same.', '');
+    plates = []; for (var g = 0; g < G; g++) plates.push([]);
+    mode = 'deal'; uneven = false; selected = null; stopAuto();
+    hintLevel = (level === 1 && pileIdx === 0) ? 1 : 0;
+    if (speak) Speaker.say(pileIdx === 0 && level <= 2 ? COPY.goal : 'Share ' + WORDS[N] + ' cookies with ' + WORDS[G] + ' friends.');
+    setTimers(); render();
+  }
+  function escalate(n) {
+    if (mode !== 'deal' || autoTimer) return;
+    if (n <= hintLevel && n !== 3) return;
+    hintLevel = Math.max(hintLevel, n);
+    if (hintLevel === 1) Speaker.say(COPY.needy);
+    else if (hintLevel === 2) { Speaker.say(COPY.give); flyGhost(); }
+    else if (hintLevel >= 3) { autoDeal(); return; }
     render();
   }
-  function setG(g) { if (busy) return; G = Math.max(1, Math.min(12, g)); reset(); }
-  function lengths() { return mats.map(function (m) { return m.length; }); }
-  function allEqual() { var l = lengths(); return l.every(function (x) { return x === l[0]; }); }
+  function boboTap() {
+    if (mode !== 'deal') { var t = mode === 'picker' ? COPY.who : COPY.goal; Speaker.say(t); return; }
+    escalate(Math.min(3, hintLevel + 1));
+  }
+  function autoDeal() {
+    clearTimers(); Speaker.say(COPY.watch); hintLevel = 3; render();
+    setTimeout(function () {
+      if (mode !== 'deal') return;
+      autoTimer = setInterval(function () {
+        if (mode !== 'deal' || !pile.length) { stopAuto(); return; }
+        var id = Math.max.apply(null, pile), e = document.querySelector('[data-id="' + id + '"]');
+        move(id, 'p', neediest(), e ? e.getBoundingClientRect() : null);
+      }, 900);
+    }, 1200);
+  }
+  function flyGhost() {
+    if (!pile.length || REDUCED) return;
+    var id = Math.max.apply(null, pile), src = document.querySelector('[data-id="' + id + '"]'), tgt = document.querySelectorAll('.friend')[neediest()];
+    if (!src || !tgt) return;
+    var a = src.getBoundingClientRect(), b = tgt.getBoundingClientRect(), f = el('div', 'flyer', '🍪');
+    f.style.fontSize = Math.round(pc * .8) + 'px'; f.style.left = a.left + 'px'; f.style.top = a.top + 'px'; f.style.width = a.width + 'px'; f.style.height = a.height + 'px';
+    document.body.appendChild(f);
+    var an = f.animate([{ transform: 'none' }, { transform: 'translate(' + (b.left + b.width / 2 - a.left - a.width / 2) + 'px,' + (b.top + b.height / 2 - a.top - a.height / 2) + 'px)' }], { duration: 900, easing: 'ease-in-out' });
+    an.onfinish = function () { f.remove(); };
+  }
+
+  /* move a cookie: from 'p' or plate index -> 'p' or plate index. srcRect is where it visually came from. */
+  function move(id, from, to, srcRect) {
+    if (mode !== 'deal' || from === to) return;
+    var src = from === 'p' ? pile : plates[from];
+    var k = src.indexOf(id); if (k < 0) return;
+    src.splice(k, 1);
+    (to === 'p' ? pile : plates[to]).push(id);
+    uneven = false; selected = null; hintLevel = Math.max(0, hintLevel > 2 ? 0 : hintLevel - 1);
+    if (!autoTimer) setTimers();
+    render();
+    var n = document.querySelector('[data-id="' + id + '"]');
+    if (n && srcRect && !REDUCED) {
+      var r = n.getBoundingClientRect(); n.style.zIndex = 50;
+      n.animate([{ transform: 'translate(' + (srcRect.left - r.left) + 'px,' + (srcRect.top - r.top) + 'px) scale(1.2)' }, { transform: 'none' }], { duration: 350, easing: 'ease-out' });
+    }
+    if (to === 'p') { Sfx.boing(); }
+    else {
+      Sfx.pop(); Speaker.count(plates[to].length);
+      var card = document.querySelectorAll('.friend')[to];
+      if (card) { card.classList.add('munch'); var bd = card.querySelector('.badge'); if (bd) bd.classList.add('pop'); }
+    }
+    if (!pile.length) setTimeout(evaluate, 800);
+  }
+  function evaluate() {
+    if (mode !== 'deal' || pile.length) return;
+    if (isFair()) success();
+    else { uneven = true; hintLevel = Math.max(hintLevel, 2); Speaker.say(COPY.uneven); render(); }
+  }
+
+  function success() {
+    mode = 'celebrate'; clearTimers(); stopAuto(); hintLevel = 0;
+    var t = N / G, f = foundFor(); f[G] = true;
+    render(); Sfx.chime(); confetti(); Speaker.say('Everybody has ' + WORDS[t] + '! That’s fair!');
+    var b = $('bobo'); b.textContent = '🤗'; b.classList.add('cheer');
+    setTimeout(function () { b.textContent = '🐻'; b.classList.remove('cheer'); }, 1200);
+    var preset = !!LEVELS[level].G;
+    if (preset) done[pileIdx] = true;
+    else { var need = LEVELS[level].needAll ? ways().every(function (g) { return f[g]; }) : true; if (need) done[pileIdx] = true; }
+    renderDots();
+    setTimeout(function () { if (mode !== 'celebrate') return; preset ? nextPile() : showPicker(); }, 3200);
+  }
+  function showPicker() {
+    mode = 'picker'; hintLevel = 0;
+    var f = foundFor(), all = ways().every(function (g) { return f[g]; });
+    Speaker.say(all ? COPY.all : COPY.another); render();
+  }
+  function nextPile() {
+    pileIdx++;
+    if (pileIdx >= piles.length) levelDone(); else startPile();
+  }
+  function levelDone() {
+    mode = 'levelend'; clearTimers(); Sfx.chime(); Speaker.say(COPY.done); $('levelend').hidden = false;
+  }
+
+  function confetti() {
+    if (REDUCED) return;
+    var E = ['🎉', '⭐', '🍪', '✨'];
+    for (var i = 0; i < 24; i++) {
+      var c = el('div', 'confetti', E[i % E.length]); c.style.left = (Math.random() * 95) + 'vw'; document.body.appendChild(c);
+      (function (c) { var a = c.animate([{ transform: 'translateY(0) rotate(0)', opacity: 1 }, { transform: 'translateY(' + (window.innerHeight + 80) + 'px) rotate(' + (Math.random() * 540 - 270) + 'deg)', opacity: 1 }], { duration: 1400 + Math.random() * 400, delay: Math.random() * 250, easing: 'ease-in', fill: 'both' }); a.onfinish = function () { c.remove(); }; })(c);
+    }
+  }
 
   /* ---------- rendering ---------- */
-  function sizeCubes() {
-    var w = matsEl.clientWidth || 340;
-    var tier = G <= 2 ? 34 : G <= 4 ? 30 : 26;
-    c = Math.max(18, Math.min(tier, Math.floor((w - 40) / 5.6 - 10)));
-    document.documentElement.style.setProperty('--c', c + 'px');
+  function isLandscape() { return window.innerWidth > window.innerHeight * 1.15; }
+  function layoutPile() {
+    var w = window.innerWidth, h = window.innerHeight, cols, rows;
+    if (isLandscape()) {
+      cols = N > 8 ? 3 : 2; rows = Math.ceil(N / cols);
+      var colW = Math.min(300, w * 0.28);
+      pc = Math.floor(Math.max(34, Math.min(72, (colW - 24) / cols - 8, (h - 130) / rows - 8)));
+    } else {
+      cols = N <= 6 ? N : Math.ceil(N / 2); rows = Math.ceil(N / cols);
+      pc = Math.floor(Math.max(40, Math.min(72, (Math.min(w, 1200) - 24 - 20 - 8 * (cols - 1)) / cols)));
+    }
+    var p = $('pile'); p.style.gridTemplateColumns = 'repeat(' + cols + ', ' + pc + 'px)'; p.style.gridAutoRows = pc + 'px';
+    document.documentElement.style.setProperty('--pc', pc + 'px');
   }
-  function cubeEl(id, from, extra) {
-    var el = document.createElement('div');
-    el.className = 'cube' + (extra ? ' extra' : ''); el.dataset.id = id; el.dataset.from = from;
-    el.addEventListener('pointerdown', onDown);
-    return el;
+  function ckEl(id, from, size) {
+    var c = el('div', 'ck', '🍪'); c.dataset.id = id; c.dataset.from = from;
+    c.style.width = c.style.height = size + 'px'; c.style.fontSize = Math.round(size * .82) + 'px';
+    if (selected === id) c.classList.add('sel');
+    c.addEventListener('pointerdown', onDown);
+    c.addEventListener('click', function (e) { e.stopPropagation(); });
+    return c;
   }
-  function ghostEl(next) {
-    var el = document.createElement('div'); el.className = 'ghost' + (next ? ' next' : ''); if (next) el.textContent = '+';
-    return el;
+  function renderPile() {
+    var p = $('pile'); p.innerHTML = '';
+    for (var i = 0; i < N; i++) {
+      var cell = el('div', 'cell');
+      if (pile.indexOf(i) >= 0) cell.appendChild(ckEl(i, 'p', pc));
+      p.appendChild(cell);
+    }
+    p.setAttribute('aria-label', 'Cookie pile, ' + pile.length + ' left');
+  }
+  function renderDots() { var d = $('dots').children; for (var i = 0; i < 3; i++) d[i].className = done[i] ? 'on' : ''; }
+
+  function renderFriends() {
+    var box = $('friends'); box.innerHTML = '';
+    var aw = box.clientWidth, ah = box.clientHeight, gap = 10;
+    var perRow = G <= 3 ? G : (G === 4 ? 2 : 3), rows = Math.ceil(G / perRow);
+    var cw = Math.floor((aw - gap * (perRow - 1)) / perRow), ch = Math.floor(Math.min((ah - gap * (rows - 1)) / rows, 300));
+    var t = N / G, cols = COLS[t] || 4, srows = Math.ceil(t / cols), sgap = 6;
+    var face = Math.max(34, Math.min(64, Math.floor(ch * .22)));
+    var slot = Math.floor(Math.max(24, Math.min(56, (cw - 28 - (cols - 1) * sgap) / cols, (ch - face - 40 - (srows - 1) * sgap) / srows)));
+    box.style.gridTemplateColumns = 'repeat(' + perRow + ', ' + cw + 'px)';
+    var need = neediest(), c = counts(), mn = Math.min.apply(null, c), good = mode === 'celebrate';
+    plates.forEach(function (pl, g) {
+      var card = el('div', 'friend'); card.dataset.g = g; card.style.height = ch + 'px';
+      card.setAttribute('role', 'button'); card.tabIndex = 0; card.setAttribute('aria-label', 'Friend ' + (g + 1) + ', ' + pl.length + ' cookies');
+      if (good) card.classList.add('good');
+      var needy = mode === 'deal' && hintLevel >= 1 && g === need && (pile.length || uneven);
+      if (needy) { card.classList.add('needy'); card.appendChild(el('div', 'point', '👆')); }
+      if (uneven && pl.length > mn) card.classList.add('wobble');
+      var f = el('div', 'face', FACES[g]); f.style.fontSize = face + 'px'; card.appendChild(f);
+      var plate = el('div', 'plate'); plate.style.gridTemplateColumns = 'repeat(' + cols + ', ' + slot + 'px)'; plate.style.gridAutoRows = slot + 'px';
+      var ghosts = level <= 2 || hintLevel >= 2 || (level === 3 && pl.length === 0) || uneven;
+      for (var k = 0; k < Math.max(t, pl.length); k++) {
+        var s = el('div', 'slot');
+        if (k < pl.length) s.appendChild(ckEl(pl[k], g, slot));
+        else if (ghosts) s.classList.add('ghost');
+        plate.appendChild(s);
+      }
+      card.appendChild(plate);
+      if (level >= 3 || good) { var b = el('div', 'badge', pl.length); card.appendChild(b); }
+      card.addEventListener('click', function () { if (Date.now() - lastDragEnd < 350) return; tapFriend(g); });
+      card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapFriend(g); } });
+      box.appendChild(card);
+    });
+  }
+
+  function renderPicker() {
+    var box = $('friends'); box.innerHTML = '';
+    var aw = box.clientWidth, ah = box.clientHeight, w = ways(), f = foundFor(), gap = 12;
+    var showGo = done[pileIdx];
+    var items = w.length + (showGo ? 1 : 0), per = Math.min(items, aw > 560 ? 4 : 2), rows = Math.ceil(items / per);
+    var cw = Math.min(170, Math.floor((aw - gap * (per - 1)) / per)), chh = Math.min(170, Math.floor((ah - gap * (rows - 1)) / rows));
+    box.style.gridTemplateColumns = 'repeat(' + per + ', ' + cw + 'px)';
+    var nextG = null; w.forEach(function (g) { if (nextG === null && !f[g]) nextG = g; });
+    w.forEach(function (g) {
+      var b = el('button', 'pick' + (f[g] ? ' done' : '') + (g === nextG ? ' next' : '')); b.style.height = chh + 'px';
+      b.setAttribute('aria-label', g + ' friends');
+      var crowd = el('div', 'crowd'); crowd.style.fontSize = Math.max(22, Math.min(40, Math.floor(cw / (g > 3 ? 3.4 : 2.4)))) + 'px';
+      for (var i = 0; i < g; i++) crowd.appendChild(el('span', '', FACES[i]));
+      b.appendChild(crowd); b.appendChild(el('div', 'num', g));
+      b.addEventListener('click', function () { G = g; startRound(true); });
+      box.appendChild(b);
+    });
+    if (showGo) {
+      var go = el('button', 'pick go', '▶'); go.style.height = chh + 'px'; go.setAttribute('aria-label', 'Next');
+      go.addEventListener('click', nextPile); box.appendChild(go);
+    }
   }
 
   function render() {
-    sizeCubes();
-    var t = Math.floor(N / G), showTarget = (mode === 'wrong' || hintLevel >= 2 || mode === 'left');
-    var minLen = Math.min.apply(null, lengths()), nextMat = hintLevel === 1 && pile.length ? lengths().indexOf(minLen) : -1;
+    layoutPile(); renderPile(); renderDots();
+    if (mode === 'picker') renderPicker(); else if (mode !== 'cover') renderFriends();
+    /* the pile area changes height after the pile is drawn, so size friends again */
+    if (mode !== 'picker' && mode !== 'cover') { /* sizes use current clientHeight; one more pass keeps it exact */ }
+  }
 
-    $('total').textContent = '🧊 ' + N + ' cubes to share';
-    $('gnum').textContent = G;
-    var good = mode === 'good';
-    $('tnum').textContent = good ? N / G : '?'; $('tnum').className = 'box' + (good ? ' good' : '');
-    $('gnum').className = 'box' + (good ? ' good' : '');
-
-    pileEl.className = pileEl.className.replace(/\b(glow|left)\b/g, '').trim();
-    if (hintLevel === 1 && pile.length) pileEl.classList.add('glow');
-    if (mode === 'left') pileEl.classList.add('left');
-    pileEl.innerHTML = '<div class="zonetitle">Cubes to share' + (pile.length ? ' · ' + pile.length + ' left' : '') + '</div>';
-    var pc = document.createElement('div'); pc.className = 'cubes';
-    pile.forEach(function (id) { pc.appendChild(cubeEl(id, 'p')); });
-    if (!pile.length) { var e = document.createElement('span'); e.className = 'empty'; e.textContent = 'All shared! 🎉'; pc.appendChild(e); }
-    pileEl.appendChild(pc);
-
-    matsEl.innerHTML = '';
-    mats.forEach(function (m, i) {
-      var mat = document.createElement('div');
-      mat.className = 'mat' + (good ? ' good' : '') + (i === nextMat ? ' next' : ''); mat.dataset.zone = i;
-      mat.innerHTML = '<div class="zonetitle"><span>Group ' + (i + 1) + '</span><span>' + m.length + '</span></div>';
-      var cc = document.createElement('div'); cc.className = 'cubes';
-      m.forEach(function (id, k) { cc.appendChild(cubeEl(id, i, showTarget && k >= t)); });
-      if (showTarget) for (var k = m.length; k < t; k++) cc.appendChild(ghostEl(false));
-      if (i === nextMat) cc.appendChild(ghostEl(true));
-      mat.appendChild(cc); matsEl.appendChild(mat);
-    });
-
-    /* leftover picture for numbers that do not divide evenly */
-    if (showTarget && N % G) {
-      var r = N % G, lo = document.createElement('div'); lo.className = 'mat'; lo.style.borderColor = 'var(--bad)';
-      lo.innerHTML = '<div class="zonetitle"><span>Left over</span><span>' + r + '</span></div>';
-      var lc = document.createElement('div'); lc.className = 'cubes';
-      for (var q = 0; q < r; q++) { var x = ghostEl(false); x.style.borderColor = 'var(--bad)'; lc.appendChild(x); }
-      lo.appendChild(lc); matsEl.appendChild(lo);
+  /* ---------- input ---------- */
+  function tapFriend(g) {
+    if (mode !== 'deal' || drag) return;
+    if (!pile.length) return;
+    var id = selected !== null && pile.indexOf(selected) >= 0 ? selected : Math.max.apply(null, pile);
+    var e = document.querySelector('[data-id="' + id + '"]');
+    move(id, 'p', g, e ? e.getBoundingClientRect() : null);
+  }
+  function friendNear(x, y) {
+    var best = -1, bd = 1e9, cards = document.querySelectorAll('.friend');
+    for (var i = 0; i < cards.length; i++) {
+      var r = cards[i].getBoundingClientRect(), d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
+      var inside = x >= r.left - 24 && x <= r.right + 24 && y >= r.top - 24 && y <= r.bottom + 24;
+      if (inside) d = d * 0.3;
+      if (d < bd) { bd = d; best = i; }
     }
-
-    var hb = $('bHint');
-    hb.textContent = hintLevel === 0 ? '💡 Hint' : hintLevel === 1 ? '💡 More help' : '🪄 Show me';
-    renderWays();
+    return bd < 140 ? best : -1;
   }
+  function overPile(x, y) { var r = $('pilewrap').getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }
 
-  function renderWays() {
-    var list = $('waylist'); list.innerHTML = ''; var f = foundNow(), w = ways(), n = 0;
-    w.forEach(function (g) {
-      var d = document.createElement('div');
-      if (f[g]) {
-        n++; d.className = 'way found'; var t = N / g;
-        var mini = document.createElement('div'); mini.className = 'mini';
-        for (var i = 0; i < g; i++) { var grp = document.createElement('i'); for (var k = 0; k < t; k++) grp.appendChild(document.createElement('b')); mini.appendChild(grp); }
-        d.appendChild(mini); var lab = document.createElement('span'); lab.textContent = g + ' groups of ' + t; d.appendChild(lab);
-      } else { d.className = 'way'; d.textContent = '?'; }
-      list.appendChild(d);
-    });
-    $('waytitle').textContent = 'Ways found: ' + n + ' of ' + w.length;
-  }
-
-  /* ---------- checking ---------- */
-  function check() {
-    if (busy) return;
-    var l = lengths();
-    if (pile.length) {
-      mode = 'left';
-      if (allEqual() && pile.length < G && l[0] > 0) {
-        setMsg('🧊 ' + pile.length + ' cubes are left over.<small>' + N + ' cubes can’t make ' + G + ' equal groups. Try a different number of groups!</small>', 'bad');
-      } else {
-        setMsg('🧊 Share all ' + pile.length + ' cubes in the pile first!', 'bad');
-      }
-      render(); return;
-    }
-    if (allEqual()) {
-      mode = 'good'; var f = foundNow(), t = N / G;
-      if (f[G]) setMsg('👍 ' + G + ' groups of ' + t + ' — you already found this one. Try another number of groups!', 'good');
-      else {
-        f[G] = true; right++; updateStars();
-        var left = ways().filter(function (g) { return !f[g]; }).length;
-        setMsg(left ? '🎉 Yes! ' + G + ' groups of ' + t + ' makes ' + N + '.<small>' + left + ' more way' + (left > 1 ? 's' : '') + ' to find!</small>'
-                    : '🏆 You found ALL ' + ways().length + ' ways! Tap Next ▶', 'good');
-      }
-    } else {
-      mode = 'wrong'; missed++; updateStars();
-      setMsg('❌ Not equal yet — try again!<small>Red ✖ cubes are extra. Dashed boxes need a cube.</small>', 'bad');
-    }
-    render();
-  }
-
-  /* ---------- hints ---------- */
-  function hint() {
-    if (busy) return;
-    if (hintLevel >= 2) { showMe(); return; }
-    hintLevel++; mode = '';
-    if (hintLevel === 1) setMsg('👉 Put a cube in the glowing group.<small>Give every group one at a time, like dealing cards.</small>', '');
-    else if (N % G) setMsg('💡 ' + N + ' cubes in ' + G + ' groups: ' + Math.floor(N / G) + ' each, and ' + (N % G) + ' left over (red).<small>Left over means it is not equal — try a different number of groups.</small>', '');
-    else setMsg('💡 Each group needs ' + N / G + ' cubes. Fill the dashed boxes!', '');
-    render();
-  }
-  function showMe() {
-    busy = true; pile = []; for (var i = 0; i < N; i++) pile.push(i); mats = mats.map(function () { return []; });
-    var t = Math.floor(N / G) * G, k = 0; mode = ''; hintLevel = 2; setMsg('🪄 Watch: one cube for each group, again and again…', ''); render();
-    var timer = setInterval(function () {
-      if (k >= t) { clearInterval(timer); busy = false; check(); return; }
-      mats[k % G].push(pile.shift()); k++; render();
-    }, 110);
-  }
-
-  /* ---------- dragging ---------- */
   function onDown(e) {
-    if (busy) return; e.preventDefault();
-    var el = e.currentTarget, r = el.getBoundingClientRect();
-    var fl = document.createElement('div'); fl.className = 'cube float'; fl.style.width = r.width + 'px'; fl.style.height = r.height + 'px';
-    document.body.appendChild(fl);
-    drag = { id: +el.dataset.id, from: el.dataset.from, sx: e.clientX, sy: e.clientY, fl: fl, w: r.width, h: r.height, moved: false };
-    el.classList.add('lifted'); moveFloat(e);
-    document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); document.addEventListener('pointercancel', onUp);
+    if (mode !== 'deal' || drag) return;
+    if (e.pointerType === 'touch' && e.width > 60) return;      /* palm */
+    e.preventDefault(); stopAuto(); clearTimers();
+    var t = e.currentTarget, r = t.getBoundingClientRect();
+    drag = { id: +t.dataset.id, from: t.dataset.from === 'p' ? 'p' : +t.dataset.from, sx: e.clientX, sy: e.clientY, moved: false, fl: null, w: r.width, h: r.height, pid: e.pointerId, el: t };
+    try { t.setPointerCapture(e.pointerId); } catch (x) {}
+    t.addEventListener('pointermove', onMove); t.addEventListener('pointerup', onUp); t.addEventListener('pointercancel', onCancel); t.addEventListener('lostpointercapture', onCancel);
   }
-  function moveFloat(e) { drag.fl.style.left = (e.clientX - drag.w / 2) + 'px'; drag.fl.style.top = (e.clientY - drag.h / 2) + 'px'; }
-  function zoneAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); return el && el.closest ? el.closest('[data-zone]') : null; }
+  function floatAt(e) { drag.fl.style.left = (e.clientX - drag.w / 2) + 'px'; drag.fl.style.top = (e.clientY - 48 - drag.h / 2) + 'px'; }
   function onMove(e) {
-    if (!drag) return;
-    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 8) drag.moved = true;
-    moveFloat(e);
-    var z = zoneAt(e);
-    document.querySelectorAll('.hot').forEach(function (n) { if (n !== z) n.classList.remove('hot'); });
-    if (z) z.classList.add('hot');
+    if (!drag || e.pointerId !== drag.pid) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 10) {
+      drag.moved = true; var f = el('div', 'float', '🍪'); f.style.width = drag.w + 'px'; f.style.height = drag.h + 'px'; f.style.fontSize = Math.round(drag.w * .82) + 'px';
+      document.body.appendChild(f); drag.fl = f; drag.el.classList.add('lifted');
+    }
+    if (!drag.moved) return;
+    floatAt(e);
+    var cx = e.clientX, cy = e.clientY - 48, n = friendNear(cx, cy), cards = document.querySelectorAll('.friend');
+    for (var i = 0; i < cards.length; i++) cards[i].classList.toggle('hot', i === n);
+    $('pilewrap').classList.toggle('hot', n < 0 && overPile(cx, cy));
   }
-  function onUp(e) {
-    document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); document.removeEventListener('pointercancel', onUp);
-    if (!drag) return;
-    var d = drag; drag = null; d.fl.remove();
+  function endDrag() {
+    var d = drag; if (!d) return null;
+    var t = d.el; t.removeEventListener('pointermove', onMove); t.removeEventListener('pointerup', onUp); t.removeEventListener('pointercancel', onCancel); t.removeEventListener('lostpointercapture', onCancel);
     document.querySelectorAll('.hot').forEach(function (n) { n.classList.remove('hot'); });
-    var dest = null;
-    if (!d.moved) { if (d.from !== 'p') dest = 'p'; }          /* tap a cube in a group = send it back */
-    else { var z = zoneAt(e); if (z) dest = z.dataset.zone; }
-    if (dest === null || dest === d.from) { render(); return; }
-    var src = d.from === 'p' ? pile : mats[+d.from];
-    src.splice(src.indexOf(d.id), 1);
-    (dest === 'p' ? pile : mats[+dest]).push(d.id);
-    mode = ''; hintLevel = 0; setMsg('', '');
-    render();
-    if (!pile.length) check();
+    var rect = d.fl ? d.fl.getBoundingClientRect() : null; if (d.fl) d.fl.remove();
+    drag = null; lastDragEnd = Date.now(); return { d: d, rect: rect };
   }
+  function onCancel() { if (!drag) return; endDrag(); render(); setTimers(); }
+  function onUp(e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    var r = endDrag(), d = r.d;
+    if (!d.moved) {                           /* a tap */
+      if (d.from === 'p') { selected = selected === d.id ? null : d.id; render(); setTimers(); }
+      else { move(d.id, d.from, 'p', d.el.getBoundingClientRect()); }
+      return;
+    }
+    var cx = e.clientX, cy = e.clientY - 48, n = friendNear(cx, cy);
+    if (n >= 0) move(d.id, d.from, n, r.rect);
+    else if (overPile(cx, cy) && d.from !== 'p') move(d.id, d.from, 'p', r.rect);
+    else { render(); setTimers(); }           /* nowhere: it just goes back, quietly */
+  }
+  document.addEventListener('pointerdown', function () { if (autoTimer) { stopAuto(); setTimers(); } }, true);
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { if (drag) onCancel(); if (Speaker.ok) speechSynthesis.cancel(); } });
+  window.addEventListener('pagehide', function () { if (Speaker.ok) speechSynthesis.cancel(); });
 
-  /* ---------- controls ---------- */
-  $('gMinus').addEventListener('click', function () { setG(G - 1); });
-  $('gPlus').addEventListener('click', function () { setG(G + 1); });
-  $('bHint').addEventListener('click', hint);
-  $('bCheck').addEventListener('click', check);
-  $('bReset').addEventListener('click', function () { if (!busy) reset(); });
-  $('bNext').addEventListener('click', function () { if (busy) return; idx = (idx + 1) % NS.length; N = NS[idx]; G = 3; reset(); });
-  window.addEventListener('resize', render);
-
-  updateStars(); reset();
+  /* ---------- buttons ---------- */
+  var holdT = null;
+  function holdStart() { home.classList.add('holding'); clearTimeout(holdT); holdT = setTimeout(function () { location.href = 'index.html'; }, 600); }
+  function holdEnd() { home.classList.remove('holding'); clearTimeout(holdT); }
+  home.addEventListener('pointerdown', holdStart);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { home.addEventListener(ev, holdEnd); });
+  $('bobo').addEventListener('click', boboTap);
+  $('say').addEventListener('click', function () { Speaker.say(mode === 'picker' ? COPY.who : COPY.goal); });
+  $('again').addEventListener('click', function () { if (mode === 'deal') startRound(false); else if (mode === 'picker') render(); });
+  $('levelnext').addEventListener('click', function () { if (level < 4) level++; save(); startLevel(); });
+  $('play').addEventListener('click', function () {
+    unlockAudio(); $('cover').hidden = true; Speaker.init(); Speaker.say(COPY.start);
+    setTimeout(startLevel, 50);
+  });
+  var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if (!drag && mode !== 'cover') render(); }, 120); });
+  window.addEventListener('orientationchange', function () { if (drag) onCancel(); });
+  Speaker.init(); renderDots();
 })();
 </script>
 </body>

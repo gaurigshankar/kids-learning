@@ -5,7 +5,7 @@ Small, single-file HTML apps for learning math on an iPad. No build step, no dep
 - `number-rods.html`: drag number rods (1-10) to add, plus a quiz mode.
 - `place-value-blocks.html`: base-ten blocks with trading (10 ones = 1 ten), Build it and Read it challenges.
 - `missing-number-rods.html`: Cuisenaire-style workspace for balance problems like 5 + 4 = ? + 3. Build with rods, then pick the missing number.
-- `equal-groups.html`: share cubes into equal groups by dragging. Find every way (e.g. 24 = 3 groups of 8, 6 groups of 4...). Three levels of picture hints.
+- `equal-groups.html`: kindergarten "Share the Cookies": give every animal friend the same number of cookies by tapping or dragging. Spoken prompts and counting, picture-only hints (tap Bobo the bear), 4 levels from 2 friends up to finding every way. Hold the home button to leave.
 - `index.html`: simple home page linking to all four.
 
 ## Run locally

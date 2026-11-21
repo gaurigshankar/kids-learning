@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Equal Groups</title>
+<style>
+:root {
+  --bg: #fbf7ee; --panel: #ffffff; --board: #fffdf8; --ink: #26303b; --muted: #6b7682; --line: #e3dccb;
+  --accent: #1e5bd8; --good: #1e8e3e; --bad: #e53935; --cube: #a23db5; --cube-dark: #6f2480; --hint: #f6b93b;
+  --c: 30px;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] { --bg: #161a20; --panel: #1f252d; --board: #1a1f26; --ink: #f1ede4; --muted: #9aa5b1; --line: #343c47; color-scheme: dark; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Nunito", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+  overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+#app { display: flex; flex-direction: column; min-height: 100vh; padding: 12px 16px 24px; gap: 10px; max-width: 1100px; margin: 0 auto; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+h1 { font-size: 26px; margin: 0 auto 0 0; font-weight: 900; }
+h1 span { color: var(--cube); }
+.btn {
+  font: inherit; font-weight: 800; font-size: 18px; color: var(--ink); background: var(--panel);
+  border: 2px solid var(--line); border-radius: 999px; padding: 10px 20px; min-height: 48px; cursor: pointer;
+}
+.btn:active { transform: scale(.96); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.hint { background: var(--hint); border-color: var(--hint); color: #26303b; }
+.btn.pulse { animation: pulse 1s infinite; }
+.stars { font-weight: 900; font-size: 18px; background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 8px 16px; min-height: 48px; display: flex; align-items: center; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.topnav { display: flex; gap: 8px; flex-wrap: wrap; }
+.topnav a { font-weight: 800; font-size: 15px; color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 6px 16px; min-height: 40px; display: flex; align-items: center; text-decoration: none; }
+.topnav a:active { transform: scale(.96); }
+.topnav a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+#eq { display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 900; font-size: clamp(28px, 6vw, 54px); white-space: nowrap; }
+#eq .step { width: 1.3em; height: 1.3em; border-radius: 50%; border: 3px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; line-height: 1; cursor: pointer; padding: 0; }
+#eq .step:active { transform: scale(.92); }
+#eq .box { min-width: 1.5em; height: 1.5em; border: 3px solid var(--muted); border-radius: 14px; background: var(--panel); display: grid; place-items: center; padding: 0 .15em; }
+#eq .box.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--panel)); }
+#total { text-align: center; font-weight: 800; font-size: 20px; color: var(--muted); margin-top: -4px; }
+
+#msg { min-height: 58px; text-align: center; font-size: 20px; font-weight: 800; color: var(--muted); line-height: 1.25; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+#msg small { display: block; font-size: 16px; font-weight: 700; }
+#msg.good { color: var(--good); }
+#msg.bad { color: #fff; background: var(--bad); border-radius: 16px; padding: 8px 14px; animation: shake .35s; }
+
+/* Cubes */
+.cube {
+  position: relative; width: var(--c); height: var(--c); border-radius: 6px; flex: none;
+  background: linear-gradient(145deg, #b857cb, var(--cube)); border: 2px solid var(--cube-dark);
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 2px 3px rgba(0,0,0,.2);
+  touch-action: none; cursor: grab;
+}
+.cube::after { content: ""; position: absolute; right: -6px; top: 25%; width: 6px; height: 50%; background: var(--cube-dark); border-radius: 0 3px 3px 0; }
+.cube.lifted { opacity: .25; }
+.cube.float { position: fixed; z-index: 100; pointer-events: none; transform: scale(1.12) rotate(-4deg); box-shadow: 0 14px 22px rgba(0,0,0,.35); }
+.cube.extra { outline: 4px solid var(--bad); outline-offset: 1px; }
+.cube.extra::before { content: "\2716"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: calc(var(--c) * .6); text-shadow: 0 0 4px #000; }
+.ghost {
+  width: var(--c); height: var(--c); border-radius: 6px; flex: none; border: 3px dashed color-mix(in srgb, var(--cube) 60%, transparent);
+  background: color-mix(in srgb, var(--cube) 10%, transparent); display: grid; place-items: center; font-weight: 900; color: var(--cube); font-size: calc(var(--c) * .6);
+}
+.ghost.next { border-color: var(--hint); background: color-mix(in srgb, var(--hint) 30%, transparent); color: #26303b; animation: pulse 1s infinite; }
+
+/* Pile */
+#pilewrap { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 4px 0; }
+#pile {
+  background: var(--panel); border: 3px solid var(--line); border-radius: 20px; padding: 10px 14px 12px; max-height: 32vh; overflow: auto;
+  transition: border-color .15s, background .15s;
+}
+#pile.hot, .mat.hot { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+#pile.glow { border-color: var(--hint); animation: pulse 1s infinite; }
+#pile.left { border-color: var(--bad); animation: pulse 1s infinite; }
+.zonetitle { font-weight: 900; font-size: 15px; color: var(--muted); margin-bottom: 6px; }
+.cubes { display: flex; flex-wrap: wrap; gap: 6px 10px; min-height: var(--c); align-items: center; }
+#pile .empty { color: var(--muted); font-weight: 800; }
+
+/* Mats */
+#mats { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 6px 0; }
+.mat {
+  width: calc(5 * (var(--c) + 10) + 26px); min-height: calc(var(--c) + 66px); background: var(--board); border: 3px solid var(--line); border-radius: 20px; padding: 8px 12px 12px;
+  transition: border-color .15s, background .15s;
+}
+.mat .cubes { gap: 8px 10px; }
+.mat .zonetitle { display: flex; justify-content: space-between; }
+.mat.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 12%, var(--board)); }
+.mat.next { border-color: var(--hint); animation: pulse 1s infinite; }
+
+/* Ways found */
+#ways { background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 10px 14px; }
+#waylist { display: flex; flex-wrap: wrap; gap: 8px; }
+.way { border: 3px dashed var(--line); border-radius: 14px; min-width: 64px; min-height: 52px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 22px; color: var(--muted); }
+.way.found { border: 3px solid var(--good); background: color-mix(in srgb, var(--good) 10%, var(--panel)); color: var(--ink); flex-direction: column; gap: 4px; font-size: 15px; }
+.mini { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 150px; }
+.mini i { display: flex; flex-wrap: wrap; gap: 1px; padding: 2px; border: 1.5px solid var(--good); border-radius: 4px; width: max-content; max-width: 34px; }
+.mini b { width: 6px; height: 6px; background: var(--cube); border-radius: 1.5px; display: block; }
+
+@keyframes pulse { 50% { transform: scale(1.03); opacity: .8; } }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) { .pulse, .ghost.next, #pile.glow, #pile.left, .mat.next, #msg.bad { animation: none; } }
+
+@media (max-width: 760px) {
+  #app { padding: 8px 10px 20px; }
+  h1 { font-size: 21px; width: 100%; }
+  .btn { font-size: 15px; padding: 6px 14px; min-height: 40px; }
+  #eq { gap: 8px; }
+  .mat { padding: 6px 8px 10px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav class="topnav" aria-label="Exercises">
+    <a href="index.html">🏠 Home</a>
+    <a href="number-rods.html">Number Rods</a>
+    <a href="place-value-blocks.html">Place Value</a>
+    <a href="missing-number-rods.html">Missing Number</a>
+    <a href="equal-groups.html" aria-current="page">Equal Groups</a>
+  </nav>
+  <header>
+    <h1>Equal <span>Groups</span></h1>
+    <button class="btn hint" id="bHint">💡 Hint</button>
+    <button class="btn primary" id="bCheck">Check ✓</button>
+    <button class="btn" id="bReset">Reset</button>
+    <button class="btn" id="bNext">Next ▶</button>
+    <div class="stars" id="stars">⭐ 0 right · ✖ 0 missed</div>
+  </header>
+
+  <div id="total"></div>
+  <div id="eq">
+    <button class="step" id="gMinus" aria-label="Fewer groups">−</button>
+    <span class="box" id="gnum">3</span>
+    <button class="step" id="gPlus" aria-label="More groups">+</button>
+    <span>groups of</span>
+    <span class="box" id="tnum">?</span>
+  </div>
+  <div id="msg" aria-live="polite"></div>
+
+  <div id="pilewrap"><div id="pile" data-zone="pile"></div></div>
+  <div id="mats"></div>
+
+  <div id="ways">
+    <div class="zonetitle" id="waytitle">Ways found</div>
+    <div id="waylist"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var NS = [24, 12, 18, 20, 16, 30];
+  var idx = 0, N = NS[0], G = 3, c = 30;
+  var pile = [], mats = [];
+  var found = {};          /* found[N][G] = true */
+  var mode = '', hintLevel = 0, busy = false;
+  var right = 0, missed = 0, drag = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pileEl = $('pile'), matsEl = $('mats'), msgEl = $('msg');
+
+  function ways() { var w = []; for (var g = 1; g <= 12; g++) if (N % g === 0) w.push(g); return w; }
+  function foundNow() { return found[N] || (found[N] = {}); }
+  function updateStars() { $('stars').textContent = '⭐ ' + right + ' right · ✖ ' + missed + ' missed'; }
+  function setMsg(t, cls) { msgEl.innerHTML = t; msgEl.className = cls || ''; }
+
+  /* ---------- state ---------- */
+  function reset() {
+    pile = []; for (var i = 0; i < N; i++) pile.push(i);
+    mats = []; for (var g = 0; g < G; g++) mats.push([]);
+    mode = ''; hintLevel = 0; setMsg('Drag cubes into the groups so every group has the same.', '');
+    render();
+  }
+  function setG(g) { if (busy) return; G = Math.max(1, Math.min(12, g)); reset(); }
+  function lengths() { return mats.map(function (m) { return m.length; }); }
+  function allEqual() { var l = lengths(); return l.every(function (x) { return x === l[0]; }); }
+
+  /* ---------- rendering ---------- */
+  function sizeCubes() {
+    var w = matsEl.clientWidth || 340;
+    var tier = G <= 2 ? 34 : G <= 4 ? 30 : 26;
+    c = Math.max(18, Math.min(tier, Math.floor((w - 40) / 5.6 - 10)));
+    document.documentElement.style.setProperty('--c', c + 'px');
+  }
+  function cubeEl(id, from, extra) {
+    var el = document.createElement('div');
+    el.className = 'cube' + (extra ? ' extra' : ''); el.dataset.id = id; el.dataset.from = from;
+    el.addEventListener('pointerdown', onDown);
+    return el;
+  }
+  function ghostEl(next) {
+    var el = document.createElement('div'); el.className = 'ghost' + (next ? ' next' : ''); if (next) el.textContent = '+';
+    return el;
+  }
+
+  function render() {
+    sizeCubes();
+    var t = Math.floor(N / G), showTarget = (mode === 'wrong' || hintLevel >= 2 || mode === 'left');
+    var minLen = Math.min.apply(null, lengths()), nextMat = hintLevel === 1 && pile.length ? lengths().indexOf(minLen) : -1;
+
+    $('total').textContent = '🧊 ' + N + ' cubes to share';
+    $('gnum').textContent = G;
+    var good = mode === 'good';
+    $('tnum').textContent = good ? N / G : '?'; $('tnum').className = 'box' + (good ? ' good' : '');
+    $('gnum').className = 'box' + (good ? ' good' : '');
+
+    pileEl.className = pileEl.className.replace(/\b(glow|left)\b/g, '').trim();
+    if (hintLevel === 1 && pile.length) pileEl.classList.add('glow');
+    if (mode === 'left') pileEl.classList.add('left');
+    pileEl.innerHTML = '<div class="zonetitle">Cubes to share' + (pile.length ? ' · ' + pile.length + ' left' : '') + '</div>';
+    var pc = document.createElement('div'); pc.className = 'cubes';
+    pile.forEach(function (id) { pc.appendChild(cubeEl(id, 'p')); });
+    if (!pile.length) { var e = document.createElement('span'); e.className = 'empty'; e.textContent = 'All shared! 🎉'; pc.appendChild(e); }
+    pileEl.appendChild(pc);
+
+    matsEl.innerHTML = '';
+    mats.forEach(function (m, i) {
+      var mat = document.createElement('div');
+      mat.className = 'mat' + (good ? ' good' : '') + (i === nextMat ? ' next' : ''); mat.dataset.zone = i;
+      mat.innerHTML = '<div class="zonetitle"><span>Group ' + (i + 1) + '</span><span>' + m.length + '</span></div>';
+      var cc = document.createElement('div'); cc.className = 'cubes';
+      m.forEach(function (id, k) { cc.appendChild(cubeEl(id, i, showTarget && k >= t)); });
+      if (showTarget) for (var k = m.length; k < t; k++) cc.appendChild(ghostEl(false));
+      if (i === nextMat) cc.appendChild(ghostEl(true));
+      mat.appendChild(cc); matsEl.appendChild(mat);
+    });
+
+    /* leftover picture for numbers that do not divide evenly */
+    if (showTarget && N % G) {
+      var r = N % G, lo = document.createElement('div'); lo.className = 'mat'; lo.style.borderColor = 'var(--bad)';
+      lo.innerHTML = '<div class="zonetitle"><span>Left over</span><span>' + r + '</span></div>';
+      var lc = document.createElement('div'); lc.className = 'cubes';
+      for (var q = 0; q < r; q++) { var x = ghostEl(false); x.style.borderColor = 'var(--bad)'; lc.appendChild(x); }
+      lo.appendChild(lc); matsEl.appendChild(lo);
+    }
+
+    var hb = $('bHint');
+    hb.textContent = hintLevel === 0 ? '💡 Hint' : hintLevel === 1 ? '💡 More help' : '🪄 Show me';
+    renderWays();
+  }
+
+  function renderWays() {
+    var list = $('waylist'); list.innerHTML = ''; var f = foundNow(), w = ways(), n = 0;
+    w.forEach(function (g) {
+      var d = document.createElement('div');
+      if (f[g]) {
+        n++; d.className = 'way found'; var t = N / g;
+        var mini = document.createElement('div'); mini.className = 'mini';
+        for (var i = 0; i < g; i++) { var grp = document.createElement('i'); for (var k = 0; k < t; k++) grp.appendChild(document.createElement('b')); mini.appendChild(grp); }
+        d.appendChild(mini); var lab = document.createElement('span'); lab.textContent = g + ' groups of ' + t; d.appendChild(lab);
+      } else { d.className = 'way'; d.textContent = '?'; }
+      list.appendChild(d);
+    });
+    $('waytitle').textContent = 'Ways found: ' + n + ' of ' + w.length;
+  }
+
+  /* ---------- checking ---------- */
+  function check() {
+    if (busy) return;
+    var l = lengths();
+    if (pile.length) {
+      mode = 'left';
+      if (allEqual() && pile.length < G && l[0] > 0) {
+        setMsg('🧊 ' + pile.length + ' cubes are left over.<small>' + N + ' cubes can’t make ' + G + ' equal groups. Try a different number of groups!</small>', 'bad');
+      } else {
+        setMsg('🧊 Share all ' + pile.length + ' cubes in the pile first!', 'bad');
+      }
+      render(); return;
+    }
+    if (allEqual()) {
+      mode = 'good'; var f = foundNow(), t = N / G;
+      if (f[G]) setMsg('👍 ' + G + ' groups of ' + t + ' — you already found this one. Try another number of groups!', 'good');
+      else {
+        f[G] = true; right++; updateStars();
+        var left = ways().filter(function (g) { return !f[g]; }).length;
+        setMsg(left ? '🎉 Yes! ' + G + ' groups of ' + t + ' makes ' + N + '.<small>' + left + ' more way' + (left > 1 ? 's' : '') + ' to find!</small>'
+                    : '🏆 You found ALL ' + ways().length + ' ways! Tap Next ▶', 'good');
+      }
+    } else {
+      mode = 'wrong'; missed++; updateStars();
+      setMsg('❌ Not equal yet — try again!<small>Red ✖ cubes are extra. Dashed boxes need a cube.</small>', 'bad');
+    }
+    render();
+  }
+
+  /* ---------- hints ---------- */
+  function hint() {
+    if (busy) return;
+    if (hintLevel >= 2) { showMe(); return; }
+    hintLevel++; mode = '';
+    if (hintLevel === 1) setMsg('👉 Put a cube in the glowing group.<small>Give every group one at a time, like dealing cards.</small>', '');
+    else if (N % G) setMsg('💡 ' + N + ' cubes in ' + G + ' groups: ' + Math.floor(N / G) + ' each, and ' + (N % G) + ' left over (red).<small>Left over means it is not equal — try a different number of groups.</small>', '');
+    else setMsg('💡 Each group needs ' + N / G + ' cubes. Fill the dashed boxes!', '');
+    render();
+  }
+  function showMe() {
+    busy = true; pile = []; for (var i = 0; i < N; i++) pile.push(i); mats = mats.map(function () { return []; });
+    var t = Math.floor(N / G) * G, k = 0; mode = ''; hintLevel = 2; setMsg('🪄 Watch: one cube for each group, again and again…', ''); render();
+    var timer = setInterval(function () {
+      if (k >= t) { clearInterval(timer); busy = false; check(); return; }
+      mats[k % G].push(pile.shift()); k++; render();
+    }, 110);
+  }
+
+  /* ---------- dragging ---------- */
+  function onDown(e) {
+    if (busy) return; e.preventDefault();
+    var el = e.currentTarget, r = el.getBoundingClientRect();
+    var fl = document.createElement('div'); fl.className = 'cube float'; fl.style.width = r.width + 'px'; fl.style.height = r.height + 'px';
+    document.body.appendChild(fl);
+    drag = { id: +el.dataset.id, from: el.dataset.from, sx: e.clientX, sy: e.clientY, fl: fl, w: r.width, h: r.height, moved: false };
+    el.classList.add('lifted'); moveFloat(e);
+    document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); document.addEventListener('pointercancel', onUp);
+  }
+  function moveFloat(e) { drag.fl.style.left = (e.clientX - drag.w / 2) + 'px'; drag.fl.style.top = (e.clientY - drag.h / 2) + 'px'; }
+  function zoneAt(e) { var el = document.elementFromPoint(e.clientX, e.clientY); return el && el.closest ? el.closest('[data-zone]') : null; }
+  function onMove(e) {
+    if (!drag) return;
+    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 8) drag.moved = true;
+    moveFloat(e);
+    var z = zoneAt(e);
+    document.querySelectorAll('.hot').forEach(function (n) { if (n !== z) n.classList.remove('hot'); });
+    if (z) z.classList.add('hot');
+  }
+  function onUp(e) {
+    document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); document.removeEventListener('pointercancel', onUp);
+    if (!drag) return;
+    var d = drag; drag = null; d.fl.remove();
+    document.querySelectorAll('.hot').forEach(function (n) { n.classList.remove('hot'); });
+    var dest = null;
+    if (!d.moved) { if (d.from !== 'p') dest = 'p'; }          /* tap a cube in a group = send it back */
+    else { var z = zoneAt(e); if (z) dest = z.dataset.zone; }
+    if (dest === null || dest === d.from) { render(); return; }
+    var src = d.from === 'p' ? pile : mats[+d.from];
+    src.splice(src.indexOf(d.id), 1);
+    (dest === 'p' ? pile : mats[+dest]).push(d.id);
+    mode = ''; hintLevel = 0; setMsg('', '');
+    render();
+    if (!pile.length) check();
+  }
+
+  /* ---------- controls ---------- */
+  $('gMinus').addEventListener('click', function () { setG(G - 1); });
+  $('gPlus').addEventListener('click', function () { setG(G + 1); });
+  $('bHint').addEventListener('click', hint);
+  $('bCheck').addEventListener('click', check);
+  $('bReset').addEventListener('click', function () { if (!busy) reset(); });
+  $('bNext').addEventListener('click', function () { if (busy) return; idx = (idx + 1) % NS.length; N = NS[idx]; G = 3; reset(); });
+  window.addEventListener('resize', render);
+
+  updateStars(); reset();
+})();
+</script>
+</body>
+</html>

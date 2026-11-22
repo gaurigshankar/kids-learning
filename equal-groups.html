@@ -7,8 +7,8 @@
 <style>
 :root {
   --bg: #fbf7ee; --panel: #ffffff; --ink: #26303b; --muted: #8a8272; --line: #e3dccb;
-  --accent: #1e5bd8; --good: #1e8e3e; --gold: #f6b93b; --sky: #4aa8e8;
-  --btn: 56px; --pc: 52px; --safe-b: env(safe-area-inset-bottom, 0px);
+  --accent: #1e5bd8; --good: #1e8e3e; --gold: #f6b93b; --gold-dark: #b07800; --sky: #4aa8e8;
+  --btn: 56px; --safe-b: env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -20,7 +20,7 @@ body {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 #app {
-  height: 100dvh; display: grid; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px calc(var(--safe-b) + 10px);
+  height: 100vh; height: 100dvh; display: grid; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 8px) max(12px, env(safe-area-inset-right, 0px)) calc(var(--safe-b) + 10px) max(12px, env(safe-area-inset-left, 0px));
   grid-template-rows: auto 1fr auto; grid-template-columns: 1fr; grid-template-areas: "top" "friends" "pile";
   max-width: 1200px; margin: 0 auto;
 }
@@ -37,7 +37,7 @@ body {
 }
 .ibtn:active { transform: scale(.92); }
 #home::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(30,91,216,.3); }
-#home.holding::after { height: 100%; transition: height .6s linear; }
+#home.holding::after { height: 100%; transition: height 1.5s linear; }
 #dots { flex: 1; display: flex; justify-content: center; gap: 8px; font-size: 30px; }
 #dots span { filter: grayscale(1); opacity: .35; transition: all .3s; }
 #dots span.on { filter: none; opacity: 1; transform: scale(1.15); }
@@ -53,14 +53,14 @@ body {
 }
 .friend:active { transform: scale(.97); }
 .friend .face { line-height: 1; }
-.friend.hot { border-color: var(--sky); background: color-mix(in srgb, var(--sky) 14%, var(--panel)); transform: scale(1.05); }
+.friend.hot { border-color: var(--sky); background: #eaf4fc; background: color-mix(in srgb, var(--sky) 14%, var(--panel)); transform: scale(1.05); }
 .friend.needy { border-color: var(--gold); animation: pulse 1s infinite; }
 .friend.wobble { animation: wobble .6s infinite; }
-.friend.good { border-color: var(--good); background: color-mix(in srgb, var(--good) 13%, var(--panel)); }
+.friend.good { border-color: var(--good); background: #eaf5ec; background: color-mix(in srgb, var(--good) 13%, var(--panel)); }
 .friend.munch .face { animation: munch .25s; }
-.plate { display: grid; gap: 6px; justify-content: center; align-content: start; padding: 6px; border-radius: 50% / 30%; background: color-mix(in srgb, var(--line) 40%, transparent); }
+.plate { display: grid; gap: 8px; justify-content: center; align-content: start; padding: 6px; border-radius: 50% / 30%; background: #f3eee2; background: color-mix(in srgb, var(--line) 40%, transparent); }
 .slot { display: grid; place-items: center; }
-.slot.ghost { border: 3px dashed color-mix(in srgb, var(--gold) 80%, #888); border-radius: 12px; background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.slot.ghost { border: 3px dashed #c9a24a; border: 3px dashed color-mix(in srgb, var(--gold) 80%, #888); border-radius: 12px; background: #fdf3da; background: color-mix(in srgb, var(--gold) 14%, transparent); }
 .badge { position: absolute; top: -10px; right: -10px; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 900; font-size: 26px; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,.25); }
 .badge.pop { animation: pop .25s; }
 .point { position: absolute; top: -26px; left: 50%; margin-left: -18px; font-size: 38px; animation: point 0.9s infinite; pointer-events: none; z-index: 5; }
@@ -75,7 +75,7 @@ body {
 /* pile */
 #pilewrap { grid-area: pile; background: var(--panel); border: 3px solid var(--line); border-radius: 26px; padding: 10px; display: flex; align-items: center; justify-content: center; align-self: end; }
 @media (orientation: landscape) and (min-aspect-ratio: 23/20) { #pilewrap { align-self: stretch; } }
-#pilewrap.hot { border-color: var(--sky); background: color-mix(in srgb, var(--sky) 12%, var(--panel)); }
+#pilewrap.hot { border-color: var(--sky); background: #eaf4fc; background: color-mix(in srgb, var(--sky) 12%, var(--panel)); }
 #pile { display: grid; gap: 8px; }
 #pile .cell { display: grid; place-items: center; }
 
@@ -87,13 +87,13 @@ body {
 .pick:active { transform: scale(.95); }
 .pick .crowd { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; line-height: 1; }
 .pick .num { font-weight: 900; font-size: 22px; color: var(--muted); }
-.pick.done { border-color: var(--good); background: color-mix(in srgb, var(--good) 12%, var(--panel)); }
+.pick.done { border-color: var(--good); background: #eaf5ec; background: color-mix(in srgb, var(--good) 12%, var(--panel)); }
 .pick.done::after { content: "\2B50"; position: absolute; top: -12px; right: -8px; font-size: 32px; }
 .pick.next { border-color: var(--gold); animation: pulse 1s infinite; }
 .pick.go { background: var(--good); border-color: var(--good); color: #fff; font-size: 64px; font-weight: 900; }
 
 /* overlays */
-.overlay { position: fixed; inset: 0; z-index: 200; background: color-mix(in srgb, var(--bg) 94%, transparent); display: grid; place-items: center; align-content: center; gap: 18px; text-align: center; }
+.overlay { position: fixed; inset: 0; z-index: 200; background: #fbf7ee; background: color-mix(in srgb, var(--bg) 94%, transparent); display: grid; place-items: center; align-content: center; gap: 18px; text-align: center; }
 .overlay[hidden] { display: none; }
 .bigplay { width: 168px; height: 168px; border-radius: 50%; border: 0; background: var(--good); color: #fff; font-size: 84px; box-shadow: 0 10px 0 #136b2c; cursor: pointer; display: grid; place-items: center; padding: 0 0 0 10px; animation: pulse 1.2s infinite; }
 .bigplay:active { transform: translateY(6px); box-shadow: 0 4px 0 #136b2c; }
@@ -112,7 +112,8 @@ body {
 @keyframes point { 50% { transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) {
   #bobo, #bobo.cheer, .friend.needy, .friend.wobble, .pick.next, .bigplay, .ck.sel, .point, .badge.pop, .friend.munch .face { animation: none; }
-  .friend.needy, .pick.next { box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 50%, transparent); }
+  .friend.needy, .pick.next { box-shadow: 0 0 0 6px var(--gold-dark); }
+  .friend.wobble { outline: 4px dashed var(--accent); outline-offset: 3px; }
 }
 @media (min-width: 700px) { :root { --btn: 64px; } }
 </style>
@@ -121,7 +122,7 @@ body {
 <div id="app">
   <div id="top">
     <button class="ibtn" id="home" aria-label="Hold to go home">🏠</button>
-    <div id="dots" aria-hidden="true"><span>⭐</span><span>⭐</span><span>⭐</span></div>
+    <div id="dots" role="img" aria-label="0 of 3 stars"><span>⭐</span><span>⭐</span><span>⭐</span></div>
     <button class="ibtn" id="say" aria-label="Say it again">🔊</button>
     <button class="ibtn" id="again" aria-label="Start this one again">🔄</button>
     <button class="ibtn" id="bobo" aria-label="Help">🐻</button>
@@ -157,7 +158,7 @@ body {
   };
   var COPY = {
     start: 'Let’s share the cookies!',
-    goal: 'Give every friend the same number of cookies.',
+    goal: 'Give every friend the same.',
     who: 'Who is coming to share?',
     needy: 'Who needs a cookie?',
     give: 'Give a cookie to this friend.',
@@ -165,8 +166,11 @@ body {
     uneven: 'Hmm, let’s make it fair!',
     another: 'Can we share a different way?',
     all: 'You found every way! Amazing!',
-    done: 'You did it!'
+    done: 'You did it!',
+    share: function (n, g) { return 'Share ' + WORDS[n] + ' cookies with ' + WORDS[g] + ' friends.'; },
+    fair: function (t) { return 'Everybody has ' + WORDS[t] + '! That’s fair!'; }
   };
+  var HINT_MS = [8000, 16000, 30000], HOLD_MS = 1500;
 
   var level = 1, piles = [], pileIdx = 0, done = [false, false, false], found = {};
   var N = 4, G = 2, pile = [], plates = [];
@@ -186,18 +190,25 @@ body {
         var vs = speechSynthesis.getVoices(); if (!vs.length) return;
         var en = vs.filter(function (v) { return /^en/i.test(v.lang); });
         var pref = en.filter(function (v) { return /Samantha|Ava|Karen|Allison|Susan|Zira/i.test(v.name); });
-        self.voice = pref[0] || en.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] || en[0] || null;
+        var us = en.filter(function (v) { return /en[-_]US/i.test(v.lang); });
+        self.voice = pref.filter(function (v) { return /en[-_]US/i.test(v.lang); })[0] || us[0] || pref[0] || en[0] || null;
       }
       pick(); speechSynthesis.onvoiceschanged = pick;
     },
-    say: function (t) {
-      $('live').textContent = t;
-      if (!this.ok) return;
+    last: '', flip: false,
+    /* tell = an instruction the child may want repeated (the speaker button replays Speaker.last) */
+    tell: function (t, done) { this.last = t; this.say(t, done); },
+    say: function (t, done) {
+      this.flip = !this.flip; $('live').textContent = t + (this.flip ? '​' : '');
+      var fired = false; function fin() { if (!fired) { fired = true; if (done) done(); } }
+      if (!this.ok) { if (done) setTimeout(fin, 300); return; }
       try {
         speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.15; if (this.voice) u.voice = this.voice;
+        u.onend = fin; u.onerror = fin;
         speechSynthesis.speak(u);
-      } catch (e) {}
+        if (done) setTimeout(fin, 4000);
+      } catch (e) { if (done) setTimeout(fin, 300); }
     },
     count: function (n) { this.say(WORDS[n] || String(n)); }
   };
@@ -214,6 +225,7 @@ body {
       o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
     } catch (e) {}
   }
+  function resumeAudio() { if (actx && actx.state !== 'running') { try { actx.resume(); } catch (e) {} } }
   var Sfx = {
     pop: function () { tone(520, 880, 0.08); },
     boing: function () { tone(400, 200, 0.15); },
@@ -230,13 +242,15 @@ body {
     clearTimers();
     if (mode !== 'deal') return;
     idleTimers = [
-      setTimeout(function () { escalate(1); }, 6000),
-      setTimeout(function () { escalate(2); }, 12000),
-      setTimeout(function () { escalate(3); }, 20000)
+      setTimeout(function () { escalate(1); }, HINT_MS[0]),
+      setTimeout(function () { escalate(2); }, HINT_MS[1]),
+      setTimeout(function () { escalate(3); }, HINT_MS[2])
     ];
   }
   function clearTimers() { idleTimers.forEach(clearTimeout); idleTimers = []; }
-  function stopAuto() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
+  var demoT = null;
+  function stopAuto() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } if (demoT) { clearTimeout(demoT); demoT = null; } }
+  function cancelDrag() { if (drag) endDrag(); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
 
   /* ---------- game flow ---------- */
@@ -245,45 +259,62 @@ body {
     $('levelend').hidden = true; startPile();
   }
   function startPile() {
-    N = piles[pileIdx]; clearTimers(); stopAuto();
+    N = piles[pileIdx]; cancelDrag(); clearTimers(); stopAuto();
     if (LEVELS[level].G) { G = LEVELS[level].G; startRound(true); }
-    else { mode = 'picker'; pile = []; for (var i = 0; i < N; i++) pile.push(i); plates = []; selected = null; hintLevel = 0; Speaker.say(COPY.who); render(); }
+    else { mode = 'picker'; pile = []; for (var i = 0; i < N; i++) pile.push(i); plates = []; selected = null; hintLevel = 0; Speaker.tell(COPY.who); render(); }
   }
   function startRound(speak) {
+    cancelDrag();
     pile = []; for (var i = 0; i < N; i++) pile.push(i);
     plates = []; for (var g = 0; g < G; g++) plates.push([]);
     mode = 'deal'; uneven = false; selected = null; stopAuto();
     hintLevel = (level === 1 && pileIdx === 0) ? 1 : 0;
-    if (speak) Speaker.say(pileIdx === 0 && level <= 2 ? COPY.goal : 'Share ' + WORDS[N] + ' cookies with ' + WORDS[G] + ' friends.');
+    if (speak) Speaker.tell(pileIdx === 0 && level <= 2 ? COPY.goal : COPY.share(N, G));
     setTimers(); render();
   }
   function escalate(n) {
-    if (mode !== 'deal' || autoTimer) return;
+    if (mode !== 'deal' || autoTimer || demoT) return;
     if (n <= hintLevel && n !== 3) return;
     hintLevel = Math.max(hintLevel, n);
-    if (hintLevel === 1) Speaker.say(COPY.needy);
-    else if (hintLevel === 2) { Speaker.say(COPY.give); flyGhost(); }
+    if (hintLevel === 1) Speaker.tell(COPY.needy);
+    else if (hintLevel === 2) { Speaker.tell(COPY.give); flyGhost(); }
     else if (hintLevel >= 3) { autoDeal(); return; }
     render();
   }
   function boboTap() {
-    if (mode !== 'deal') { var t = mode === 'picker' ? COPY.who : COPY.goal; Speaker.say(t); return; }
+    if (mode !== 'deal') { Speaker.say(Speaker.last || COPY.goal); return; }
     escalate(Math.min(3, hintLevel + 1));
   }
+  /* The demo shows ONE pass (at most one cookie per friend), or ONE fix when the groups are uneven, then hands control back. */
   function autoDeal() {
-    clearTimers(); Speaker.say(COPY.watch); hintLevel = 3; render();
-    setTimeout(function () {
+    cancelDrag(); clearTimers(); Speaker.say(COPY.watch); hintLevel = 3; render();
+    var dealt = 0;
+    demoT = setTimeout(function () {
+      demoT = null;
       if (mode !== 'deal') return;
       autoTimer = setInterval(function () {
-        if (mode !== 'deal' || !pile.length) { stopAuto(); return; }
-        var id = Math.max.apply(null, pile), e = document.querySelector('[data-id="' + id + '"]');
+        if (mode !== 'deal') { stopAuto(); return; }
+        var id, e;
+        if (!pile.length) {                              /* uneven: move one cookie fullest -> neediest */
+          stopAuto();
+          var c = counts(), f = c.indexOf(Math.max.apply(null, c)), to = neediest();
+          if (f !== to && c[f] > c[to]) {
+            id = plates[f][plates[f].length - 1]; e = document.querySelector('[data-id="' + id + '"]');
+            move(id, f, to, e ? e.getBoundingClientRect() : null);
+          }
+          hintLevel = 0; setTimers(); return;
+        }
+        if (dealt >= G) { stopAuto(); hintLevel = 0; setTimers(); render(); return; }
+        dealt++; id = Math.max.apply(null, pile); e = document.querySelector('[data-id="' + id + '"]');
         move(id, 'p', neediest(), e ? e.getBoundingClientRect() : null);
       }, 900);
     }, 1200);
   }
   function flyGhost() {
-    if (!pile.length || REDUCED) return;
-    var id = Math.max.apply(null, pile), src = document.querySelector('[data-id="' + id + '"]'), tgt = document.querySelectorAll('.friend')[neediest()];
+    if (REDUCED) return;
+    var src = null, c = counts(), tgt = document.querySelectorAll('.friend')[neediest()];
+    if (pile.length) src = document.querySelector('[data-id="' + Math.max.apply(null, pile) + '"]');
+    else { var fu = c.indexOf(Math.max.apply(null, c)); if (plates[fu].length) src = document.querySelector('[data-id="' + plates[fu][plates[fu].length - 1] + '"]'); }
     if (!src || !tgt) return;
     var a = src.getBoundingClientRect(), b = tgt.getBoundingClientRect(), f = el('div', 'flyer', '🍪');
     f.style.fontSize = Math.round(pc * .8) + 'px'; f.style.left = a.left + 'px'; f.style.top = a.top + 'px'; f.style.width = a.width + 'px'; f.style.height = a.height + 'px';
@@ -294,7 +325,8 @@ body {
 
   /* move a cookie: from 'p' or plate index -> 'p' or plate index. srcRect is where it visually came from. */
   function move(id, from, to, srcRect) {
-    if (mode !== 'deal' || from === to) return;
+    if (mode !== 'deal') return;
+    if (from === to) { render(); setTimers(); return; }
     var src = from === 'p' ? pile : plates[from];
     var k = src.indexOf(id); if (k < 0) return;
     src.splice(k, 1);
@@ -317,6 +349,7 @@ body {
   }
   function evaluate() {
     if (mode !== 'deal' || pile.length) return;
+    cancelDrag();
     if (isFair()) success();
     else { uneven = true; hintLevel = Math.max(hintLevel, 2); Speaker.say(COPY.uneven); render(); }
   }
@@ -324,7 +357,7 @@ body {
   function success() {
     mode = 'celebrate'; clearTimers(); stopAuto(); hintLevel = 0;
     var t = N / G, f = foundFor(); f[G] = true;
-    render(); Sfx.chime(); confetti(); Speaker.say('Everybody has ' + WORDS[t] + '! That’s fair!');
+    render(); Sfx.chime(); confetti(); Speaker.say(COPY.fair(t));
     var b = $('bobo'); b.textContent = '🤗'; b.classList.add('cheer');
     setTimeout(function () { b.textContent = '🐻'; b.classList.remove('cheer'); }, 1200);
     var preset = !!LEVELS[level].G;
@@ -336,14 +369,16 @@ body {
   function showPicker() {
     mode = 'picker'; hintLevel = 0;
     var f = foundFor(), all = ways().every(function (g) { return f[g]; });
-    Speaker.say(all ? COPY.all : COPY.another); render();
+    Speaker.tell(all ? COPY.all : COPY.another); render();
   }
   function nextPile() {
     pileIdx++;
     if (pileIdx >= piles.length) levelDone(); else startPile();
   }
   function levelDone() {
-    mode = 'levelend'; clearTimers(); Sfx.chime(); Speaker.say(COPY.done); $('levelend').hidden = false;
+    cancelDrag(); mode = 'levelend'; clearTimers(); Sfx.chime(); Speaker.say(COPY.done); $('levelend').hidden = false;
+    if (level < 4) level++;                       /* the last level simply repeats */
+    save();
   }
 
   function confetti() {
@@ -351,24 +386,26 @@ body {
     var E = ['🎉', '⭐', '🍪', '✨'];
     for (var i = 0; i < 24; i++) {
       var c = el('div', 'confetti', E[i % E.length]); c.style.left = (Math.random() * 95) + 'vw'; document.body.appendChild(c);
-      (function (c) { var a = c.animate([{ transform: 'translateY(0) rotate(0)', opacity: 1 }, { transform: 'translateY(' + (window.innerHeight + 80) + 'px) rotate(' + (Math.random() * 540 - 270) + 'deg)', opacity: 1 }], { duration: 1400 + Math.random() * 400, delay: Math.random() * 250, easing: 'ease-in', fill: 'both' }); a.onfinish = function () { c.remove(); }; })(c);
+      (function (c) { var a = c.animate([{ transform: 'translateY(0) rotate(0)', opacity: 1 }, { transform: 'translateY(' + (window.innerHeight + 80) + 'px) rotate(' + (Math.random() * 540 - 270) + 'deg)', opacity: 1 }], { duration: 1000 + Math.random() * 250, delay: Math.random() * 200, easing: 'ease-in', fill: 'both' }); a.onfinish = function () { c.remove(); }; })(c);
     }
   }
 
   /* ---------- rendering ---------- */
-  function isLandscape() { return window.innerWidth > window.innerHeight * 1.15; }
+  function isLandscape() { return window.innerWidth >= window.innerHeight * 1.15; }
   function layoutPile() {
     var w = window.innerWidth, h = window.innerHeight, cols, rows;
     if (isLandscape()) {
       cols = N > 8 ? 3 : 2; rows = Math.ceil(N / cols);
       var colW = Math.min(300, w * 0.28);
-      pc = Math.floor(Math.max(34, Math.min(72, (colW - 24) / cols - 8, (h - 130) / rows - 8)));
+      pc = Math.floor(Math.max(48, Math.min(72, (colW - 24) / cols - 8, (h - 130) / rows - 8)));
     } else {
-      cols = N <= 6 ? N : Math.ceil(N / 2); rows = Math.ceil(N / cols);
-      pc = Math.floor(Math.max(40, Math.min(72, (Math.min(w, 1200) - 24 - 20 - 8 * (cols - 1)) / cols)));
+      cols = N <= 6 ? N : Math.ceil(N / 2);
+      var avail = ($('pilewrap').clientWidth || (Math.min(w, 1200) - 24)) - 20;   /* minus the tray's own padding */
+      while (cols > 2 && (avail - 8 * (cols - 1)) / cols < 52) cols--;           /* more rows rather than smaller cookies */
+      rows = Math.ceil(N / cols);
+      pc = Math.floor(Math.max(48, Math.min(72, (avail - 8 * (cols - 1)) / cols)));
     }
     var p = $('pile'); p.style.gridTemplateColumns = 'repeat(' + cols + ', ' + pc + 'px)'; p.style.gridAutoRows = pc + 'px';
-    document.documentElement.style.setProperty('--pc', pc + 'px');
   }
   function ckEl(id, from, size) {
     var c = el('div', 'ck', '🍪'); c.dataset.id = id; c.dataset.from = from;
@@ -387,16 +424,22 @@ body {
     }
     p.setAttribute('aria-label', 'Cookie pile, ' + pile.length + ' left');
   }
-  function renderDots() { var d = $('dots').children; for (var i = 0; i < 3; i++) d[i].className = done[i] ? 'on' : ''; }
+  function renderDots() {
+    var d = $('dots').children, n = 0;
+    for (var i = 0; i < 3; i++) { d[i].className = done[i] ? 'on' : ''; if (done[i]) n++; }
+    $('dots').setAttribute('aria-label', n + ' of 3 stars');
+  }
 
   function renderFriends() {
     var box = $('friends'); box.innerHTML = '';
     var aw = box.clientWidth, ah = box.clientHeight, gap = 10;
     var perRow = G <= 3 ? G : (G === 4 ? 2 : 3), rows = Math.ceil(G / perRow);
     var cw = Math.floor((aw - gap * (perRow - 1)) / perRow), ch = Math.floor(Math.min((ah - gap * (rows - 1)) / rows, 300));
-    var t = N / G, cols = COLS[t] || 4, srows = Math.ceil(t / cols), sgap = 6;
+    var t = N / G, sgap = 8, cols = COLS[t] || 4;
+    cols = Math.max(1, Math.min(cols, Math.floor((cw - 28 + sgap) / (40 + sgap))));   /* slots never go below 40px */
+    var srows = Math.ceil(t / cols);
     var face = Math.max(34, Math.min(64, Math.floor(ch * .22)));
-    var slot = Math.floor(Math.max(24, Math.min(56, (cw - 28 - (cols - 1) * sgap) / cols, (ch - face - 40 - (srows - 1) * sgap) / srows)));
+    var slot = Math.floor(Math.max(40, Math.min(56, (cw - 28 - (cols - 1) * sgap) / cols, (ch - face - 40 - (srows - 1) * sgap) / srows)));
     box.style.gridTemplateColumns = 'repeat(' + perRow + ', ' + cw + 'px)';
     var need = neediest(), c = counts(), mn = Math.min.apply(null, c), good = mode === 'celebrate';
     plates.forEach(function (pl, g) {
@@ -430,7 +473,7 @@ body {
     var items = w.length + (showGo ? 1 : 0), per = Math.min(items, aw > 560 ? 4 : 2), rows = Math.ceil(items / per);
     var cw = Math.min(170, Math.floor((aw - gap * (per - 1)) / per)), chh = Math.min(170, Math.floor((ah - gap * (rows - 1)) / rows));
     box.style.gridTemplateColumns = 'repeat(' + per + ', ' + cw + 'px)';
-    var nextG = null; w.forEach(function (g) { if (nextG === null && !f[g]) nextG = g; });
+    var nextG = null; w.forEach(function (g) { if (nextG === null && !f[g] && !showGo) nextG = g; });
     w.forEach(function (g) {
       var b = el('button', 'pick' + (f[g] ? ' done' : '') + (g === nextG ? ' next' : '')); b.style.height = chh + 'px';
       b.setAttribute('aria-label', g + ' friends');
@@ -441,7 +484,7 @@ body {
       box.appendChild(b);
     });
     if (showGo) {
-      var go = el('button', 'pick go', '▶'); go.style.height = chh + 'px'; go.setAttribute('aria-label', 'Next');
+      var go = el('button', 'pick go next', '▶'); go.style.height = chh + 'px'; go.setAttribute('aria-label', 'Next');
       go.addEventListener('click', nextPile); box.appendChild(go);
     }
   }
@@ -480,7 +523,8 @@ body {
     var t = e.currentTarget, r = t.getBoundingClientRect();
     drag = { id: +t.dataset.id, from: t.dataset.from === 'p' ? 'p' : +t.dataset.from, sx: e.clientX, sy: e.clientY, moved: false, fl: null, w: r.width, h: r.height, pid: e.pointerId, el: t };
     try { t.setPointerCapture(e.pointerId); } catch (x) {}
-    t.addEventListener('pointermove', onMove); t.addEventListener('pointerup', onUp); t.addEventListener('pointercancel', onCancel); t.addEventListener('lostpointercapture', onCancel);
+    /* listeners live on window (not the item): render() recreates items, which must never strand a drag */
+    window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onCancelEv);
   }
   function floatAt(e) { drag.fl.style.left = (e.clientX - drag.w / 2) + 'px'; drag.fl.style.top = (e.clientY - 48 - drag.h / 2) + 'px'; }
   function onMove(e) {
@@ -497,11 +541,12 @@ body {
   }
   function endDrag() {
     var d = drag; if (!d) return null;
-    var t = d.el; t.removeEventListener('pointermove', onMove); t.removeEventListener('pointerup', onUp); t.removeEventListener('pointercancel', onCancel); t.removeEventListener('lostpointercapture', onCancel);
+    window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancelEv);
     document.querySelectorAll('.hot').forEach(function (n) { n.classList.remove('hot'); });
     var rect = d.fl ? d.fl.getBoundingClientRect() : null; if (d.fl) d.fl.remove();
     drag = null; lastDragEnd = Date.now(); return { d: d, rect: rect };
   }
+  function onCancelEv(e) { if (drag && e.pointerId === drag.pid) onCancel(); }
   function onCancel() { if (!drag) return; endDrag(); render(); setTimers(); }
   function onUp(e) {
     if (!drag || e.pointerId !== drag.pid) return;
@@ -516,24 +561,28 @@ body {
     else if (overPile(cx, cy) && d.from !== 'p') move(d.id, d.from, 'p', r.rect);
     else { render(); setTimers(); }           /* nowhere: it just goes back, quietly */
   }
-  document.addEventListener('pointerdown', function () { if (autoTimer) { stopAuto(); setTimers(); } }, true);
+  document.addEventListener('pointerdown', function (e) {
+    resumeAudio();
+    if (autoTimer || demoT) { stopAuto(); hintLevel = 0; setTimers(); if (!(e.target.closest && e.target.closest('.ck'))) render(); }   /* a cookie's own handler re-renders on drop */
+  }, true);
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) { if (drag) onCancel(); if (Speaker.ok) speechSynthesis.cancel(); } });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) resumeAudio(); if (document.hidden) { if (drag) onCancel(); if (Speaker.ok) speechSynthesis.cancel(); } });
   window.addEventListener('pagehide', function () { if (Speaker.ok) speechSynthesis.cancel(); });
 
   /* ---------- buttons ---------- */
   var holdT = null;
-  function holdStart() { home.classList.add('holding'); clearTimeout(holdT); holdT = setTimeout(function () { location.href = 'index.html'; }, 600); }
+  function holdStart() { home.classList.add('holding'); clearTimeout(holdT); holdT = setTimeout(function () { location.href = 'index.html'; }, HOLD_MS); }
   function holdEnd() { home.classList.remove('holding'); clearTimeout(holdT); }
   home.addEventListener('pointerdown', holdStart);
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { home.addEventListener(ev, holdEnd); });
+  home.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.href = 'index.html'; } });
   $('bobo').addEventListener('click', boboTap);
-  $('say').addEventListener('click', function () { Speaker.say(mode === 'picker' ? COPY.who : COPY.goal); });
+  $('say').addEventListener('click', function () { Speaker.say(Speaker.last || COPY.goal); });
   $('again').addEventListener('click', function () { if (mode === 'deal') startRound(false); else if (mode === 'picker') render(); });
-  $('levelnext').addEventListener('click', function () { if (level < 4) level++; save(); startLevel(); });
+  $('levelnext').addEventListener('click', function () { startLevel(); });
   $('play').addEventListener('click', function () {
-    unlockAudio(); $('cover').hidden = true; Speaker.init(); Speaker.say(COPY.start);
-    setTimeout(startLevel, 50);
+    unlockAudio(); $('cover').hidden = true; Speaker.init();
+    Speaker.tell(COPY.start, startLevel);               /* the opening line finishes before the first instruction */
   });
   var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if (!drag && mode !== 'cover') render(); }, 120); });
   window.addEventListener('orientationchange', function () { if (drag) onCancel(); });
